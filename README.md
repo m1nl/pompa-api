@@ -87,7 +87,7 @@ Web browser:
 * [Redis](https://redis.io/)
 
 ## License
-`pompa` is released under the [LGPL](LICENSE).
+`pompa` is released under the terms of [lgpl-3.0](LICENSE).
 
 ## Author
 
