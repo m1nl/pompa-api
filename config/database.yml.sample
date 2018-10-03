@@ -1,0 +1,20 @@
+default: &default
+  adapter: postgresql
+  timeout: 5000
+  pool: 30
+
+development:
+  <<: *default
+  database: pompa_dev
+
+# Warning: The database defined as "test" will be erased and
+# re-generated from your development database when you run "rake".
+# Do not set this db to the same as development or production.
+test:
+  <<: *default
+  database: pompa_test
+
+production:
+  <<: *default
+  database: pompa
+  pool: 50

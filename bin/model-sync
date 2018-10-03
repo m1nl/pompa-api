@@ -1,0 +1,119 @@
+#!/usr/bin/env ruby
+
+require 'rails'
+require 'concurrent'
+require_relative '../config/environment'
+
+require 'pompa/multi_logger'
+
+#################
+
+CHANNEL = 'model_sync'.freeze
+TIMEOUT = 30
+
+TAG = 'model-sync'.freeze
+
+INIT = 'init'.freeze
+
+CREATE = 'create'.freeze
+DELETE = 'delete'.freeze
+UPDATE = 'update'.freeze
+
+OPERATIONS = [CREATE, DELETE, UPDATE].freeze
+
+#################
+
+Signal.trap('INT') { raise Interrupt }
+Signal.trap('TERM') { raise Interrupt }
+
+#################
+
+::Rails.application.eager_load!
+
+logger = Rails.logger
+logger.push_tags(TAG)
+logger.extend(Pompa::MultiLogger)
+
+pool = Concurrent::ThreadPoolExecutor.new(
+  min_threads: 1,
+  max_threads: Concurrent.processor_count * 2,
+  max_queue: 0,
+)
+
+ActiveRecord::Base.establish_connection
+
+ActiveRecord::Base.connection_pool.with_connection do |connection|
+  conn = connection.instance_variable_get(:@connection)
+
+  begin
+    models = {}
+    conn.async_exec("LISTEN #{CHANNEL}")
+    logger.info{"Listening on #{CHANNEL} channel"}
+
+    loop do
+      conn.wait_for_notify(TIMEOUT) do |channel, pid, payload|
+        operation, model_name, instance_id = payload.split(' ')
+        instance_id = instance_id.to_i
+
+        next if !OPERATIONS.include?(operation)
+        next if instance_id == 0
+
+        model = models[model_name]
+
+        begin
+          model ||= model_name.singularize.camelize.constantize
+          models[model_name] = model
+        rescue NameError
+          logger.error{"Invalid model name #{model_name}"};
+          models[model_name] = nil
+          next
+        end
+
+        logger.debug{"Performing #{operation} for #{model} ##{instance_id}"}
+
+        pool.post do
+          unless !!Thread.current[INIT]
+            logger.push_tags(TAG, "TID-#{Thread.current.object_id}")
+            Thread.current[INIT] = true
+          end
+
+          begin
+            case operation
+              when CREATE
+                if model < WorkerModel
+                  model.start_worker(instance_id,
+                    :force => true) if model.worker_auto_start?
+                end
+              when DELETE
+                if model < Model
+                  model.reset_cached_key(instance_id)
+                end
+
+                if model < WorkerModel
+                  model.stop_worker(instance_id,
+                    :discard => true)
+                end
+              when UPDATE
+                if model < Model
+                  model.reset_cached_key(instance_id)
+                end
+            end
+
+          logger.debug{"Operation #{operation} for #{model} ##{instance_id} performed"}
+
+          rescue StandardError => e
+            logger.error{"Operation #{operation} for #{model} ##{instance_id} failed with #{e.message}"}
+            logger.multi_logger.backtrace(e)
+          end
+        end
+      end
+    end
+
+  rescue Interrupt
+    logger.info{'Exiting...'}
+  ensure
+    conn.async_exec('UNLISTEN *')
+    pool.shutdown
+    pool.wait_for_termination
+  end
+end

@@ -1,0 +1,51 @@
+#!/bin/bash
+# post-receive
+
+read from_commit to_commit branch_name
+
+deploy_branch="refs/heads/master"
+deploy_to_dir="/home/pompa/pompa"
+repo_dir="/home/pompa/pompa.git"
+environment="production"
+
+if [ "$branch_name" != "$deploy_branch" ] ; then
+  echo "DEPLOY: received branch $branch_name, not deploying."
+  exit 0
+fi
+
+cd $repo_dir
+git --work-tree="$deploy_to_dir" --git-dir="${repo_dir}" checkout -f $branch_name
+
+echo "DEPLOY: master($branch_name/$to_commit) copied to '$deploy_to_dir'."
+
+export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting
+[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
+export ENVIRONMENT="$environment"
+export RAILS_ENV="$ENVIRONMENT"
+
+cd $deploy_to_dir
+
+if [ -f "tmp/pids/sidekiq.pid" ] ; then
+  echo "DEPLOY: sending TSTP to sidekiq."
+  SIDEKIQ_PID="`cat tmp/pids/sidekiq.pid`"
+  kill -TSTP $SIDEKIQ_PID
+fi
+
+echo "DEPLOY: installing bundle."
+bundle install 2>&1
+
+echo "DEPLOY: migrating database."
+rake db:migrate 2>&1
+
+echo "DEPLOY: generating revision mark."
+./genrevision.sh --git-dir="${repo_dir}/.git" 2>&1
+
+echo "DEPLOY: restarting instance."
+sudo service pompa-puma stop 2>&1
+sudo service pompa-puma start 2>&1
+sudo service pompa-sidekiq stop 2>&1
+sudo service pompa-sidekiq start 2>&1
+sudo service pompa-model-sync stop 2>&1
+sudo service pompa-model-sync start 2>&1
+
+exit 0

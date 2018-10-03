@@ -1,0 +1,20 @@
+[Unit]
+Description=pompa-puma
+Requires=network.target
+Requires=postgresql-9.6.service
+Requires=redis.service
+After=network.target
+After=postgresql-9.6.service
+After=redis.service
+
+[Service]
+Type=forking
+Environment=RAILS_ENV=production
+ExecStart=/home/pompa/.rvm/wrappers/ruby-2.4.1@pompa/puma --bind unix://tmp/sockets/puma.sock --pidfile tmp/pids/puma.pid --daemon --tag pompa --preload
+WorkingDirectory=/home/pompa/pompa
+PIDFile=/home/pompa/pompa/tmp/pids/puma.pid
+User=pompa
+Group=pompa
+
+[Install]
+WantedBy=multi-user.target
