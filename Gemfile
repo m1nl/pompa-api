@@ -1,23 +1,25 @@
 source 'https://rubygems.org'
 
 git_source(:github) do |repo_name|
-  repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?("/")
+  repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?('/')
   "https://github.com/#{repo_name}.git"
 end
 
+gem 'rails', '~> 5.2.0'
+
 if defined?(JRUBY_VERSION)
-  gem 'rails', '~> 5.0.6'
-  github 'jruby/activerecord-jdbc-adapter', branch: '50-stable' do
-    gem 'activerecord-jdbc-adapter'
-    gem 'activerecord-jdbcpostgresql-adapter'
+  github 'jruby/activerecord-jdbc-adapter', branch: '52-stable' do
+    gem 'activerecord-jdbcpostgresql-adapter', :platform => :jruby
   end
 else
-  gem 'rails', '~> 5.2.0'
   gem 'pg', '~> 1.0.0'
+  gem 'redis', '~> 4.0'
+
   gem 'concurrent-ruby-ext'
+  gem 'hiredis'
+  gem 'bootsnap'
 end
 
-gem 'bootsnap'
 gem 'rack-cors'
 gem 'puma'
 gem 'active_model_serializers'
@@ -27,13 +29,9 @@ gem 'paperclip'
 gem 'validate_url'
 gem 'sidekiq'
 gem 'liquid'
-gem 'redis'
-gem 'hiredis'
-gem 'redis-rails'
 gem 'hashie'
 gem 'mail'
 gem 'activerecord-import'
-gem 'ihasa'
 gem 'http'
 gem 'awesome_print'
 gem 'rubyzip'

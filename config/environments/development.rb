@@ -1,5 +1,3 @@
-require "redis"
-require "redis-rails"
 require "pompa"
 
 Rails.application.configure do
@@ -21,7 +19,8 @@ Rails.application.configure do
   if Rails.root.join('tmp', 'caching-dev.txt').exist?
     config.action_controller.perform_caching = true
 
-    config.cache_store = :redis_store, { pool: Pompa::RedisConnection.pool(store: true) }
+    config.cache_store = :redis_cache_store, Pompa::RedisConnection
+      .config.slice(:driver, :url)
     config.public_file_server.headers = {
       'Cache-Control' => "public, max-age=#{2.days.to_i}"
     }

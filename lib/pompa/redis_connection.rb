@@ -1,5 +1,4 @@
 require "redis"
-require "redis/store"
 require "redlock"
 require "connection_pool"
 
@@ -11,19 +10,11 @@ module Pompa
       def pool(opts = {})
         opts[:size] ||= pool_size
 
-        if !!opts[:store]
-          ConnectionPool.new(size: opts[:size], &redis_store_connection)
-        else
-          ConnectionPool.new(size: opts[:size], &redis_connection)
-        end
+        ConnectionPool.new(size: opts[:size], &redis_connection)
       end
 
       def common_pool(opts = {})
-        if !!opts[:store]
-          redis_store_common_pool
-        else
-          redis_common_pool
-        end
+        redis_common_pool
       end
 
       def redis(opts = {})
@@ -105,11 +96,7 @@ module Pompa
       end
 
       def get(opts = {})
-        if !!opts[:store]
-          redis_store_connection.call
-        else
-          redis_connection.call
-        end
+        redis_connection.call
       end
 
       def config
@@ -129,16 +116,8 @@ module Pompa
           @redis_connection ||= proc { Redis.new(config) }
         end
 
-        def redis_store_connection
-          @redis_store_connection ||= proc { Redis::Store.new(config) }
-        end
-
         def redis_common_pool
           @redis_common_pool ||= pool
-        end
-
-        def redis_store_common_pool
-          @redis_store_common_pool ||= pool(:store => true)
         end
 
         def pool_size

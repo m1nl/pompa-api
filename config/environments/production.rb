@@ -1,5 +1,3 @@
-require "redis"
-require "redis-rails"
 require "pompa"
 
 Rails.application.configure do
@@ -52,7 +50,8 @@ Rails.application.configure do
   config.log_tags = [ :request_id ]
 
   # Use a different cache store in production.
-  config.cache_store = :redis_store, { pool: Pompa::RedisConnection.pool(store: true) }
+  config.cache_store = :redis_cache_store, Pompa::RedisConnection
+    .config.slice(:driver, :url)
 
   # Use a real queuing backend for Active Job (and separate queues per environment)
   # config.active_job.queue_adapter     = :resque
