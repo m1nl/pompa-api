@@ -52,7 +52,6 @@ default: &default
 
 production:
   <<: *default
-  origins: ""
   redis:
     <<: *redis_default
     db: 1
@@ -60,6 +59,7 @@ production:
 
 development:
   <<: *default
+  origins: "*"
   log_level: "debug"
 
 test:
