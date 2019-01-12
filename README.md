@@ -21,7 +21,7 @@ You will need the following things properly installed on your computer:
 * `rvm use`
 * `gem install bundler`
 * `bundle install`
-* `rvm wrapper \`pwd\`/bin/model-sync`
+* ``rvm wrapper `pwd`/bin/model-sync``
 
 ## Configuration
 
