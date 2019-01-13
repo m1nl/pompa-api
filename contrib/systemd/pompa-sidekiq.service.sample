@@ -1,16 +1,16 @@
 [Unit]
 Description=pompa-sidekiq
 Requires=network.target
-Requires=postgresql-9.6.service
-Requires=redis.service
+Requires=postgresql.service
+Requires=redis-server.service
 After=network.target
-After=postgresql-9.6.service
-After=redis.service
+After=postgresql.service
+After=redis-server.service
 
 [Service]
 Type=forking
-Environment=RAILS_ENV=production
-ExecStart=/home/pompa/.rvm/wrappers/ruby-2.4.1@pompa/sidekiq --pidfile tmp/pids/sidekiq.pid --tag pompa --logfile log/sidekiq.log --daemon
+Environment=RAILS_ENV=production RUBYOPT="--jit"
+ExecStart=/home/pompa/.rvm/wrappers/ruby-2.6.0@pompa/sidekiq --pidfile tmp/pids/sidekiq.pid --tag pompa --logfile log/sidekiq.log --daemon
 WorkingDirectory=/home/pompa/pompa
 PIDFile=/home/pompa/pompa/tmp/pids/sidekiq.pid
 User=pompa

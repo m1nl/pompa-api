@@ -1,20 +1,19 @@
 [Unit]
 Description=pompa-model-sync
 Requires=network.target
-Requires=postgresql-9.6.service
-Requires=redis.service
+Requires=postgresql.service
+Requires=redis-server.service
 After=network.target
-After=postgresql-9.6.service
-After=redis.service
+After=postgresql.service
+After=redis-server.service
 
 [Service]
 Type=simple
-Environment=RAILS_ENV=production
-ExecStart=/home/pompa/.rvm/wrappers/ruby-2.4.1@pompa/model-sync
+Environment=RAILS_ENV=production RUBYOPT="--jit"
+ExecStart=/home/pompa/.rvm/wrappers/ruby-2.6.0@pompa/model-sync
 WorkingDirectory=/home/pompa/pompa
 User=pompa
 Group=pompa
-SendSIGKILL=no
 
 [Install]
 WantedBy=multi-user.target
