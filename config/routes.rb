@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
   scope path: Rails.configuration.pompa.url do
-    if Rails.configuration.pompa.interfaces.admin
+    if Rails.configuration.pompa.endpoints.admin
       resources :events
       resources :victims, only: [:index, :show, :destroy]
       resources :scenarios
@@ -39,7 +39,7 @@ Rails.application.routes.draw do
       get '/events/series/:period', to: 'events#series'
     end
 
-    if Rails.configuration.pompa.interfaces.public
+    if Rails.configuration.pompa.endpoints.public
       scope path: '/public' do
         match '/', via: :all, to: 'public#index'
         match '/report', via: :all, to: 'public#report'
@@ -49,7 +49,7 @@ Rails.application.routes.draw do
     end
 
 
-    if Rails.configuration.pompa.interfaces.sidekiq_console
+    if Rails.configuration.pompa.endpoints.sidekiq_console
       require 'sidekiq/web'
       Sidekiq::Web.set :session_secret, Rails.application.secrets[:secret_key_base]
       mount Sidekiq::Web => '/sidekiq'

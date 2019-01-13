@@ -1,3 +1,6 @@
+# vi:syntax=yaml
+
+# redis configuration (https://www.rubydoc.info/github/redis/redis-rb/Redis/Client)
 redis_default: &redis_default
   driver: hiredis
   pool_size: 15
@@ -5,48 +8,48 @@ redis_default: &redis_default
   db: 0
 
 default: &default
-  log_level: "info"
-  code_length: 7
-  batch_size: 1000
-  url: /api
-  origins: ""
-  trust_uploads: true
-  trusted_proxies:
+  log_level: "info" # available log levels are: debug, info, warn, error, fatal and unknown
+  code_length: 7 # length of auto-generated client-side IDs for resources and victims
+  batch_size: 1000 # batch size when doing various bulk SQL inserts (i.e. importing targets from CSV file)
+  url: /api # relative URL for application API - public endpoint is exposed under /api/public by default
+  origins: "" # allowed origins for Cross-Origin Resource Sharing (CORS)
+  trust_uploads: true # whether to check if mime-type of a uploaded resource matches the extension
+  trusted_proxies: # trusted IPs of proxies in order to handle X-Forwarded-For header correctly
     - "127.0.0.1"
     - "::1"
-  interfaces:
+  endpoints: # backend endpoints to be enabled for this instance
     admin: true
     public: true
     sidekiq_console: false
-  model_cache:
+  model_cache: # whether to perform Redis caching of a data model
     enable: true
     expire: 300
-  response_cache:
+  response_cache: # whether to enable caching of responses from the public endpoint
     enable: true
     expire: 300
-  lock:
+  lock: # parameters for Redlock distributed locking (expert)
     retry_delay: 0.2
     retry_count: 50
-  worker:
+  worker: # parameters for message queue communication (expert)
     queue_timeout: 30
     refill_interval: 120
     expiry_timeout: 300
-  mailer:
-    idle_timeout: 180
-    debug_email_content: false
-  campaign:
-    sync_interval: 20
-    victim_batch_size: 3
-    error_threshold: 6
-    respawn_interval: 300
-  victim:
-    email_timeout: 300
-    retry_threshold: 5
-    expose_header: "X-Victim-Code"
-  template:
-    base_url: "http://localhost:3000/api/public"
-  report:
-    cookie_name: "pompa"
+  mailer: # parameters for mailer worker
+    idle_timeout: 180 # number of seconds of the worker to be active in idle state
+    debug_email_content: false # wheter to send email content to logs
+  campaign: # parameters for campaign worker
+    sync_interval: 20 # how often Redis<->PostgreSQL event synchronization should occur (in seconds)
+    victim_batch_size: 3 # how many victim worker jobs should be spawned at once
+    error_threshold: 6 # number of errors before a campaign is paused
+    respawn_interval: 300 # how often the campaign worker job should be respawned (expert)
+  victim: # parameters for victim worker
+    email_timeout: 300 # how long a worker should wait for a response from a mailer worker before timeout
+    retry_threshold: 5 # how many times a worker should try to queue an email before going into error state
+    expose_header: "X-Victim-Code" # header name inside email to include the victim unique ID (victim code)
+  template: # parameters / defaults for a template
+    base_url: "http://localhost:3000/api/public" # default base URL for a template (instance default
+  report: # parameters for event reporting subsystem inside the public endpoint
+    cookie_name: "pompa" # name of a persistent cookie set by public endpoint handler for each victim
   redis:
     <<: *redis_default
 

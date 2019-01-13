@@ -16,7 +16,7 @@ class ApplicationSerializer < ActiveModel::Serializer
   class << self
     def admin_enabled?
       return @admin_enabled unless @admin_enabled.nil?
-      @admin_enabled = Rails.configuration.pompa.interfaces.admin
+      @admin_enabled = Rails.configuration.pompa.endpoints.admin
     end
   end
 end

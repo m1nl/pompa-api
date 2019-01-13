@@ -14,7 +14,7 @@ default: &default
   trusted_proxies:
     - "127.0.0.1"
     - "::1"
-  interfaces:
+  endpoints:
     admin: true
     public: true
     sidekiq_console: false
