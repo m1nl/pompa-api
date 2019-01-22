@@ -1,6 +1,6 @@
 # pompa
 
-Ultimate spear-phishing toolkit - API and job queue
+Fully-featured spear-phishing toolkit - API and job queue
 
 ## Prerequisites
 
