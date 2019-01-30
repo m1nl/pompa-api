@@ -2,6 +2,8 @@
 
 Fully-featured spear-phishing toolkit - API and job queue
 
+**NOTE:** this is only backend component for [pompa](https://github.com/m1nl/pompa) web frontend. Please use [pompa-docker](https://github.com/m1nl/pompa-docker) repository for a full deployment base and read the [wiki](https://github.com/m1nl/pompa/wiki/Getting-Started).
+
 ## Prerequisites
 
 You will need the following things properly installed on your computer:
