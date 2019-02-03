@@ -90,17 +90,17 @@ module Pompa
 
         json = message_queue.pop(false, queue_timeout)
 
-        worker_lock
-
         loop do
           try_resync
+
           result_code = parse_and_process(json)
           message_queue.commit if !json.nil? && result_code != FAILED
-
           break unless result_code == SUCCESS
 
-          json = message_queue.pop(true)
+          with_worker_lock { json = message_queue.pop(true) }
         end
+
+        worker_lock
 
         if cancelled?
           self.worker_state = CANCELLED
