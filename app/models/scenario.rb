@@ -82,7 +82,12 @@ class Scenario < ApplicationRecord
 
     ids.each do |c|
       campaign = Campaign.find_by_id(c)
-      campaign.resync if !campaign.nil?
+      next if campaign.nil?
+
+      campaign.with_worker_lock do
+        campaign.resync
+        campaign.pause if campaign.state == Campaign::STARTED
+      end
     end
   end
 

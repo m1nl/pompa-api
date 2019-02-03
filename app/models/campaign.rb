@@ -54,15 +54,15 @@ class Campaign < ApplicationRecord
   end
 
   def start(opts = {})
-    message({ :action => START }, opts)
+    message({ :action => START }, opts.merge(:head => true))
   end
 
   def pause(opts = {})
-    message({ :action => PAUSE }, opts)
+    message({ :action => PAUSE }, opts.merge(:head => true))
   end
 
   def finish(opts = {})
-    message({ :action => FINISH }, opts)
+    message({ :action => FINISH }, opts.merge(:head => true))
   end
 
   def push_event(victim_id, goal_id, data = {}, opts = {})
