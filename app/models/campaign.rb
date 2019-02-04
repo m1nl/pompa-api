@@ -35,7 +35,7 @@ class Campaign < ApplicationRecord
   scope :finished, -> { where(state: FINISHED) }
 
   worker_auto start: true, spawn: true
-  worker_finished -> { state == CREATED || state == FINISHED }
+  worker_finished -> { state == FINISHED }
 
   after_initialize :state_order
   before_validation :state_order
