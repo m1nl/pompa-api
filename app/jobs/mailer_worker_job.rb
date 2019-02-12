@@ -93,7 +93,7 @@ class MailerWorkerJob < WorkerJob
             next
           end
 
-          while (bucket.nil? && !bucket.accept?)
+          while (!bucket.nil? && !bucket.accept?)
             sleep(block_time)
           end
 
