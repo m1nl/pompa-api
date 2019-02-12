@@ -64,10 +64,14 @@ class MailerWorkerJob < WorkerJob
           prefix: IHASA_PREFIX % SecureRandom.uuid,
           redis: Pompa::RedisConnection.get)
         @block_time = [block_time,
-          [(1.1 / rate).seconds, idle_timeout / 2].min].max
+          [(1.05 / rate).seconds, idle_timeout / 2].min].max
+        @block_time = block_time.ceil(3)
       end
 
       self.queue_timeout = [block_time.round, MIN_QUEUE_TIMEOUT].max
+
+      logger.info("Throttling: #{( bucket.nil? ? "off" : "on" )}, " \
+        "block time: #{block_time}s, queue timeout: #{self.queue_timeout}s")
 
       return model
     end
