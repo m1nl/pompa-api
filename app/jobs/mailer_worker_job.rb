@@ -34,6 +34,7 @@ class MailerWorkerJob < WorkerJob
   SMTPS_PORT = 465
 
   MIN_QUEUE_TIMEOUT = 5.seconds
+  MIN_BLOCK_TIME = 0.001.seconds
 
   queue_as :mailers
 
@@ -54,7 +55,7 @@ class MailerWorkerJob < WorkerJob
       super
 
       @bucket = nil
-      block_time = MIN_QUEUE_TIMEOUT
+      @block_time = MIN_BLOCK_TIME
 
       if !model.per_minute.nil? && model.per_minute > 0
         rate = model.per_minute / 60.0
@@ -62,11 +63,11 @@ class MailerWorkerJob < WorkerJob
         @bucket = Ihasa.bucket(rate: rate, burst: burst,
           prefix: IHASA_PREFIX % SecureRandom.uuid,
           redis: Pompa::RedisConnection.get)
-        block_time = [block_time,
-          [(1.2 / rate).seconds, idle_timeout / 2].min].max
+        @block_time = [block_time,
+          [(1.1 / rate).seconds, idle_timeout / 2].min].max
       end
 
-      self.queue_timeout = block_time.round
+      self.queue_timeout = [block_time.round, MIN_QUEUE_TIMEOUT].max
 
       return model
     end
@@ -79,7 +80,7 @@ class MailerWorkerJob < WorkerJob
 
     def tick
       redis.with do |r|
-        while message_queue.length == 0 && (bucket.nil? || bucket.accept?) do
+        while message_queue.length == 0 do
           json = r.lpop(mail_queue_key_name)
           break if json.nil?
 
@@ -90,6 +91,10 @@ class MailerWorkerJob < WorkerJob
           rescue JSON::ParserError => e
             logger.error("Ignoring invalid queued email")
             next
+          end
+
+          while (bucket.nil? && !bucket.accept?)
+            sleep(block_time)
           end
 
           response(deliver(mail), mail[:reply_to])
@@ -291,6 +296,10 @@ class MailerWorkerJob < WorkerJob
 
     def bucket
       @bucket
+    end
+
+    def block_time
+      @block_time
     end
 
     ###
