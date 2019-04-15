@@ -25,6 +25,8 @@ Rails.application.routes.draw do
 
       get '/victims/:id/report', to: 'victim_reports#show'
 
+      get '/victims/:id/mail', to: 'victims#mail'
+
       post '/victims/:id/send-email', to: 'victims#send_email'
       post '/victims/:id/reset-state', to: 'victims#reset_state'
 
