@@ -55,7 +55,15 @@ class ResourcesController < ApplicationController
     return unless stale?(etag: @resource,
         last_modified: @resource.updated_at, public: true)
 
-    filename = "resource_#{@resource.id}#{@resource.real_extension}"
+    filename = ""
+
+    if @resource.type == Resource::FILE
+      filename = @resource.file.filename.sanitized
+    end
+
+    if filename.blank?
+      filename = "resource_#{@resource.id}#{@resource.real_extension}"
+    end
 
     response.headers[CONTENT_TYPE_HEADER] = @resource.real_content_type
     response.headers[CONTENT_DISPOSITION_HEADER] =

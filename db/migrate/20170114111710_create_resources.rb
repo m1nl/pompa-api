@@ -4,7 +4,6 @@ class CreateResources < ActiveRecord::Migration[5.0]
       t.citext :name, :null => false
       t.text :description
       t.string :url
-      t.attachment :file
       t.string :content_type
       t.string :extension
       t.boolean :dynamic_url

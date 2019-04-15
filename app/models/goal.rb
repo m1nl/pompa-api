@@ -19,6 +19,10 @@ class Goal < ApplicationRecord
     )
   end
 
+  def dup
+    super.tap { |c| c.code = Pompa::Utils.random_code }
+  end
+
   class << self
     def id_by_code(goal_code)
       Pompa::Cache.fetch("goal_#{goal_code}/id") do

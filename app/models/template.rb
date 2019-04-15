@@ -76,6 +76,25 @@ class Template < ApplicationRecord
     )
   end
 
+  def duplicate
+    copy = dup
+    copy.name = "#{copy.name} (copy)"
+
+    ActiveRecord::Base.transaction do
+      copy.save!
+
+      goals.each { |g| g.dup.tap { |o| o.template_id = copy.id }.save! }
+      resources.each { |r| r.dup.tap { |o| o.template_id = copy.id }.save! }
+
+      attachments.includes(:resource).each do |a|
+        a = a.dup.tap { |o| o.template_id = copy.id }
+        a.resource_id = copy.resources.where(
+          :name => a.resource.name).pluck(:id).first
+        a.save!
+      end
+    end
+  end
+
   private
     class TemplateFilters < Module
       def initialize(template, model, opts = {})

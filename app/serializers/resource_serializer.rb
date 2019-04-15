@@ -6,7 +6,7 @@ class ResourceSerializer < ApplicationSerializer
 
   def file
     if object.type == Resource::FILE
-      return { filename: object.file.original_filename, content_type: object.file.content_type, size: object.file.size }
+      return { filename: object.file.filename.sanitized, content_type: object.file.content_type }
     else
       return nil
     end

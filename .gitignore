@@ -47,6 +47,8 @@
 # ignore all uploads
 /private/*
 !/private/.keep
+/storage/*
+!/storage/.keep
 
 # ignore revision mark
 /config/initializers/revision.rb

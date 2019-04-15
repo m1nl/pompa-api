@@ -14,7 +14,6 @@ class Resource < ApplicationRecord
   EXTENSION = 'extension'.freeze
   CONTENT_TYPE = 'content_type'.freeze
 
-  BUFFER_SIZE = 102400
   DEFAULT_CONTENT_TYPE = 'application/octet-stream'.freeze
   DEFAULT_EXTENSION = '.bin'.freeze
 
@@ -27,9 +26,7 @@ class Resource < ApplicationRecord
   validates :name, :code, presence: true
   validates :url, :url => { :allow_nil => true, :allow_blank => true }
 
-  has_attached_file :file, :validate_media_type =>
-    !Rails.configuration.pompa.trust_uploads
-  do_not_validate_attachment_file_type :file
+  has_one_attached :file
 
   validate :transforms_check
 
@@ -50,14 +47,13 @@ class Resource < ApplicationRecord
   end
 
   def file=(value)
-    result = file.assign(value)
+    result = file.attach(value)
 
-    if file?
+    if file.attached?
       self[:url] = nil
       dynamic_url = false
     end
 
-    @temp_path = nil
     @real_content_type = nil
 
     result
@@ -65,16 +61,15 @@ class Resource < ApplicationRecord
 
   def url=(value)
     self[:url] = value
-    file.clear unless value.blank?
+    file.purge unless value.blank?
 
-    @temp_path = nil
     @real_content_type = nil
 
     value
   end
 
   def type
-    return FILE if file?
+    return FILE if file.attached?
     return URL if !url.blank?
     return EMPTY
   end
@@ -104,13 +99,12 @@ class Resource < ApplicationRecord
   def content(model = {}, opts = {})
     case type
       when FILE
-        file = File.open(temp_path, 'r')
-
         if block_given?
-          yield file.read(BUFFER_SIZE) until file.eof?
-          file.close
+          file.download do |c|
+            yield c
+          end
         else
-          return file.read
+          return file.download
         end
       when URL
         if dynamic_url?
@@ -171,7 +165,7 @@ class Resource < ApplicationRecord
     @real_extension = self.extension
 
     if (@real_extension.blank? && type == FILE)
-      @real_extension = File.extname(file.original_filename)
+      @real_extension = File.extname(file.filename.sanitized)
     end
 
     if @real_extension.blank?
@@ -183,26 +177,6 @@ class Resource < ApplicationRecord
     @real_extension = @real_extension.downcase
 
     @real_extension
-  end
-
-  def temp_path
-    return if type != FILE
-
-    @temp_path ||= Pompa::Cache.fetch("#{cache_key}/temp_path",
-      :condition => !file.dirty?) do
-      Paperclip.io_adapters.for(file).path
-    end
-
-    if !File.file?(@temp_path)
-      @temp_path = nil
-      Pompa::Cache.delete("#{cache_key}/temp_path")
-      @temp_path ||= Pompa::Cache.fetch("#{cache_key}/temp_path",
-        :condition => !file.dirty?) do
-        Paperclip.io_adapters.for(file).path
-      end
-    else
-      @temp_path
-    end
   end
 
   class ContentWrapper
@@ -220,6 +194,20 @@ class Resource < ApplicationRecord
         yield @error_handler.call(e)
       else
         raise e
+      end
+    end
+  end
+
+  def dup
+    super.tap do |c|
+      c.code = Pompa::Utils.random_code
+
+      if type == FILE
+        ActiveStorage::Downloader.new(file.blob)
+         .download_blob_to_tempfile do |f|
+          c.file.attach({ io: f, filename: file.blob.filename,
+            content_type: file.blob.content_type })
+        end
       end
     end
   end
