@@ -66,6 +66,10 @@ module Renderable
       render({ json: object, include: include_params }.merge!(opts))
     end
 
+    def render_errors(errors = {}, opts = {})
+      render({ json: { :errors => errors }}.merge!(opts))
+    end
+
     def render_worker_response(worker_response, opts = {})
       response.set_header(CONTENT_LOCATION, worker_path(
         id: worker_response.worker_id)) if !worker_response.worker_id.nil?

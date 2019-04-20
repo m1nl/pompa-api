@@ -22,7 +22,7 @@ class AttachmentsController < ApplicationController
     if @attachment.save
       render_instance @attachment, status: :created, location: @attachment
     else
-      render_instance @attachment.errors, status: :unprocessable_entity
+      render_errors @attachment.errors, status: :unprocessable_entity
     end
   end
 
@@ -31,7 +31,7 @@ class AttachmentsController < ApplicationController
     if @attachment.update(attachment_params)
       render_instance @attachment
     else
-      render_instance @attachment.errors, status: :unprocessable_entity
+      render_errors @attachment.errors, status: :unprocessable_entity
     end
   end
 
@@ -39,6 +39,12 @@ class AttachmentsController < ApplicationController
   def destroy
     @attachment.destroy
   end
+
+  protected
+    def record_not_unique(error)
+      render :json => { :errors => { :name => [NOT_UNIQUE] } },
+        :status => :unprocessable_entity
+    end
 
   private
     # Use callbacks to share common setup or constraints between actions.

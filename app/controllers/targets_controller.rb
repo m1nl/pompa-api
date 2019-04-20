@@ -26,7 +26,7 @@ class TargetsController < ApplicationController
     if @target.save
       render_instance @target, { status: :created, location: @target }
     else
-      render_instance @target.errors, { status: :unprocessable_entity }
+      render_errors @target.errors, { status: :unprocessable_entity }
     end
   end
 
@@ -35,7 +35,7 @@ class TargetsController < ApplicationController
     if @target.update(target_params)
       render_instance @target
     else
-      render_instance @target.errors, { status: :unprocessable_entity }
+      render_errors @target.errors, { status: :unprocessable_entity }
     end
   end
 

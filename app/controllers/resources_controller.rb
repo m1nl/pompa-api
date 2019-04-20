@@ -30,7 +30,7 @@ class ResourcesController < ApplicationController
     if @resource.save
       render_instance @resource, status: :created, location: @resource
     else
-      render_instance @resource.errors, status: :unprocessable_entity
+      render_errors @resource.errors, status: :unprocessable_entity
     end
   end
 
@@ -39,7 +39,7 @@ class ResourcesController < ApplicationController
     if @resource.update(resource_params)
       render_instance @resource
     else
-      render_instance @resource.errors, status: :unprocessable_entity
+      render_errors @resource.errors, status: :unprocessable_entity
     end
   end
 
@@ -81,6 +81,12 @@ class ResourcesController < ApplicationController
     @resource.update(file: params.require(:file))
     head :no_content
   end
+
+  protected
+    def record_not_unique(error)
+      render :json => { :errors => { :name => [NOT_UNIQUE] } },
+        :status => :unprocessable_entity
+    end
 
   private
     # Use callbacks to share common setup or constraints between actions.

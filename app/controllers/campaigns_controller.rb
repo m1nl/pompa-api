@@ -22,7 +22,7 @@ class CampaignsController < ApplicationController
     if @campaign.save
       render_instance @campaign, status: :created, location: @campaign
     else
-      render_instance @campaign.errors, status: :unprocessable_entity
+      render_errors @campaign.errors, status: :unprocessable_entity
     end
   end
 
@@ -31,7 +31,7 @@ class CampaignsController < ApplicationController
     if @campaign.update(campaign_params)
       render_instance @campaign
     else
-      render_instance @campaign.errors, status: :unprocessable_entity
+      render_errors @campaign.errors, status: :unprocessable_entity
     end
   end
 
@@ -63,6 +63,12 @@ class CampaignsController < ApplicationController
     @campaign.synchronize_events
     head :no_content
   end
+
+  protected
+    def record_not_unique(error)
+      render :json => { :errors => { :name => [NOT_UNIQUE] } },
+        :status => :unprocessable_entity
+    end
 
   private
     # Use callbacks to share common setup or constraints between actions.

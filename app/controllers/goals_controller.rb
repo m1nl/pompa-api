@@ -22,7 +22,7 @@ class GoalsController < ApplicationController
     if @goal.save
       render_instance @goal, status: :created, location: @goal
     else
-      render_instance @goal.errors, status: :unprocessable_entity
+      render_errors @goal.errors, status: :unprocessable_entity
     end
   end
 
@@ -31,7 +31,7 @@ class GoalsController < ApplicationController
     if @goal.update(goal_params)
       render_instance @goal
     else
-      render_instance @goal.errors, status: :unprocessable_entity
+      render_errors @goal.errors, status: :unprocessable_entity
     end
   end
 
@@ -39,6 +39,12 @@ class GoalsController < ApplicationController
   def destroy
     @goal.destroy
   end
+
+  protected
+    def record_not_unique(error)
+      render :json => { :errors => { :name => [NOT_UNIQUE] } },
+        :status => :unprocessable_entity
+    end
 
   private
     # Use callbacks to share common setup or constraints between actions.

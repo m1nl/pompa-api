@@ -22,7 +22,7 @@ class TemplatesController < ApplicationController
     if @template.save
       render_instance @template, status: :created, location: @template
     else
-      render_instance @template.errors, status: :unprocessable_entity
+      render_errors @template.errors, status: :unprocessable_entity
     end
   end
 
@@ -31,7 +31,7 @@ class TemplatesController < ApplicationController
     if @template.update(template_params)
       render_instance @template
     else
-      render_instance @template.errors, status: :unprocessable_entity
+      render_errors @template.errors, status: :unprocessable_entity
     end
   end
 
@@ -39,6 +39,12 @@ class TemplatesController < ApplicationController
   def destroy
     @template.destroy
   end
+
+  protected
+    def record_not_unique(error)
+      render :json => { :errors => { :name => [NOT_UNIQUE] } },
+        :status => :unprocessable_entity
+    end
 
   private
     # Use callbacks to share common setup or constraints between actions.

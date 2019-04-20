@@ -22,7 +22,7 @@ class GroupsController < ApplicationController
     if @group.save
       render_instance @group, { status: :created, location: @group }
     else
-      render_instance @group.errors, { status: :unprocessable_entity }
+      render_errors @group.errors, { status: :unprocessable_entity }
     end
   end
 
@@ -31,7 +31,7 @@ class GroupsController < ApplicationController
     if @group.update(group_params)
       render_instance @group
     else
-      render_instance @group.errors, { status: :unprocessable_entity }
+      render_errors @group.errors, { status: :unprocessable_entity }
     end
   end
 
@@ -45,6 +45,12 @@ class GroupsController < ApplicationController
     @group.clear
     head :no_content
   end
+
+  protected
+    def record_not_unique(error)
+      render :json => { :errors => { :name => [NOT_UNIQUE] } },
+        :status => :unprocessable_entity
+    end
 
   private
     # Use callbacks to share common setup or constraints between actions.

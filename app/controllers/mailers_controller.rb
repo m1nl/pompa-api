@@ -24,7 +24,7 @@ class MailersController < ApplicationController
     if @mailer.save
       render_instance @mailer, status: :created, location: @mailer
     else
-      render_instance @mailer.errors, status: :unprocessable_entity
+      render_errors @mailer.errors, status: :unprocessable_entity
     end
   end
 
@@ -35,7 +35,7 @@ class MailersController < ApplicationController
     if @mailer.update(params)
       render_instance @mailer
     else
-      render_instance @mailer.errors, status: :unprocessable_entity
+      render_errors @mailer.errors, status: :unprocessable_entity
     end
   end
 
@@ -43,6 +43,12 @@ class MailersController < ApplicationController
   def destroy
     @mailer.destroy
   end
+
+  protected
+    def record_not_unique(error)
+      render :json => { :errors => { :name => [NOT_UNIQUE] } },
+        :status => :unprocessable_entity
+    end
 
   private
     # Use callbacks to share common setup or constraints between actions.
