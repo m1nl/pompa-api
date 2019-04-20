@@ -25,6 +25,7 @@ class Template < ApplicationRecord
   validates :name, presence: true
   validates :sender_email,
     format: { with: /@/, message: "provide a valid email" }, allow_blank: true
+  validates :base_url, :url => { :allow_nil => true, :allow_blank => true }
 
   nullify_blanks :sender_email, :sender_name, :base_url, :landing_url,
     :report_url, :static_resource_url, :dynamic_resource_url
