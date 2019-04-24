@@ -4,13 +4,17 @@ require 'json'
 class Worker
   extend ActiveModel::Naming
 
+  extend Pompa::Worker::State
+
   include ActiveModel::Model
   include ActiveModel::Serialization
 
-  include Pompa::Worker::Control
+  include Pompa::Worker::State
 
   attr_accessor :id, :instance_id, :worker_class_name, :message_queue, :started_at
   validates :id, :instance_id, :worker_class_name, :message_queue, presence: true
+
+  alias_method :jid, :id
 
   def initialize(attributes = {})
     @id = attributes[:id]

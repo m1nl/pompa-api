@@ -3,6 +3,8 @@ require 'active_support/concern'
 
 module WorkerModel
   extend ActiveSupport::Concern
+
+  include Pompa::Worker::State
   include Pompa::Worker::Control
 
   included do
@@ -11,7 +13,7 @@ module WorkerModel
     scope :active, -> { where.not(jid: nil) }
     scope :inactive, -> { where(jid: nil) }
 
-    extend Pompa::Worker::Const
+    extend Pompa::Worker::State
     extend Pompa::Worker::Control
 
     extend FinalClassMethods
