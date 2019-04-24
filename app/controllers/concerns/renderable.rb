@@ -82,8 +82,9 @@ module Renderable
         :queue_id => queue_id)
 
       response.set_header(LOCATION, location) if !location.nil?
+      response.status = opts.delete(:status) || :accepted
 
-      head(opts.delete(:status) || :accepted)
+      render({ json: {} }.merge!(opts))
     end
 
     def render_worker_response(worker_response, opts = {})
