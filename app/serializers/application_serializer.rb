@@ -6,7 +6,7 @@ class ApplicationSerializer < ActiveModel::Serializer
   end
 
   def include_links?
-    admin_enabled? && !links.empty?
+    admin_enabled? && !links.blank?
   end
 
   def admin_enabled?
