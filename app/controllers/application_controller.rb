@@ -1,4 +1,8 @@
+require 'pompa/multi_logger'
+
 class ApplicationController < ActionController::API
+  include Pompa::MultiLogger
+
   rescue_from ActiveRecord::RecordNotFound, :with => :record_not_found
   rescue_from ActiveRecord::RecordNotUnique, :with => :record_not_unique
   rescue_from ActiveRecord::RecordInvalid, :with => :record_invalid

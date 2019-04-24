@@ -1,9 +1,7 @@
 require 'csv'
-require 'pompa/multi_logger'
 
 class TargetsController < ApplicationController
   include Renderable
-  include Pompa::MultiLogger
 
   before_action :set_target, only: [:show, :update, :destroy]
 

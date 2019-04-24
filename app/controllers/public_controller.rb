@@ -1,11 +1,9 @@
 require 'base64'
 require 'uri'
-require 'pompa/multi_logger'
 
 class PublicController < ApplicationController
   include ActionController::MimeResponds
   include ActionController::Cookies
-  include Pompa::MultiLogger
 
   rescue_from StandardError, :with => :handle_error if Rails.env.production?
 
