@@ -1,4 +1,5 @@
 require 'json'
+require 'securerandom'
 require 'pompa/redis_connection'
 require 'pompa/worker/const'
 
@@ -266,8 +267,8 @@ module Pompa
           head = !!opts.delete(:head)
 
           message[:request_id] ||= opts[:request_id] ||
-            Pompa::Utils.random_code
-          message[:reply_to] ||= "#{ANONYMOUS}:#{Pompa::Utils.random_code}"
+            Pompa::Utils.utils
+          message[:reply_to] ||= "#{ANONYMOUS}:#{Pompa::Utils.uuid}"
           message[:expires] ||= (timeout * 2).seconds.from_now
 
           queue_key_name = message_queue_key_name(instance_id, name)
@@ -319,7 +320,7 @@ module Pompa
               Array(instance_id).each do |i|
                 queue_key_name = message_queue_key_name(i, name)
                 message[:request_id] ||= opts[:request_id] ||
-                  Pompa::Utils.random_code
+                  Pompa::Utils.uuid
 
                 if head
                   p.lpush(queue_key_name, message.to_json)

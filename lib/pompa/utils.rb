@@ -14,6 +14,10 @@ module Pompa
         SecureRandom.urlsafe_base64(code_length)
       end
 
+      def uuid
+        SecureRandom.uuid
+      end
+
       def urlsafe_digest(value)
         sha1 = Digest::SHA1.new
         sha1 << value

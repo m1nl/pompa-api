@@ -269,7 +269,7 @@ module Pompa
       def response(message, recipient = nil)
         return if !message.is_a?(Hash)
 
-        message[:request_id] ||= Pompa::Utils.random_code
+        message[:request_id] ||= Pompa::Utils.uuid
 
         multi_logger.debug{["Response: ", message]}
 
