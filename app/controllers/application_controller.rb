@@ -42,5 +42,8 @@ class ApplicationController < ActionController::API
     def query_invalid(error)
       render :json => { :errors => { :query => [INVALID] } },
         :status => :unprocessable_entity
+
+      multi_logger.error{"Error in #{self.class.name}, #{e.class}: #{e.message}"}
+      multi_logger.backtrace(e)
     end
 end
