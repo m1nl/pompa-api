@@ -2,6 +2,7 @@ module Pompa
   module Worker
     module Const
       ANONYMOUS = 'anonymous'.freeze
+      CLASS = 'Class'.freeze
 
       STARTED = 'started'.freeze
       FINISHED = 'finished'.freeze

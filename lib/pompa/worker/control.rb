@@ -1,12 +1,11 @@
 require 'json'
-require 'securerandom'
 require 'pompa/redis_connection'
-require 'pompa/worker/const'
+require 'pompa/worker/generic'
 
 module Pompa
   module Worker
     module Control
-      include Const
+      include Generic
 
       def resync(opts = {})
         timeout = opts.delete(:timeout) || expiry_timeout
@@ -138,31 +137,6 @@ module Pompa
             :timeout => timeout))
       end
 
-      ### Status information
-
-      def last_active(opts = {})
-        instance_id = opts.delete(:instance_id) || self.instance_id
-        name = opts.delete(:name) || self.worker_class_name
-
-        opts[:pool] ||= redis if defined?(redis)
-
-        last_active_string = Pompa::RedisConnection.redis(opts) { |r|
-          r.get(last_active_key_name(instance_id, name)) }
-
-        return Time.at(0) if last_active_string.blank?
-        return Time.iso8601(last_active_string)
-      end
-
-      def worker_state(opts = {})
-        instance_id = opts.delete(:instance_id) || self.instance_id
-        name = opts.delete(:name) || self.worker_class_name
-
-        opts[:pool] ||= redis if defined?(redis)
-
-        Pompa::RedisConnection.redis(opts) { |r|
-          r.get(worker_state_key_name(instance_id, name)) }
-      end
-
       ### Locking
 
       def with_worker_lock(opts = {})
@@ -239,26 +213,6 @@ module Pompa
         "#{name}:#{instance_id}:subscribers"
       end
 
-      def last_active_key_name(instance_id = self.instance_id,
-        name = worker_class_name)
-        "#{name}:#{instance_id}:last_active"
-      end
-
-      def worker_state_key_name(instance_id = self.instance_id,
-        name = worker_class_name)
-        "#{name}:#{instance_id}:worker_state"
-      end
-
-      def worker_class_name
-        return super if defined?(super)
-        return self.class.name if self.class.name != CLASS
-        return self.name
-      end
-
-      def worker_class
-        worker_class_name.constantize
-      end
-
       protected
         def message_sync(message, opts = {})
           timeout = opts.delete(:timeout) || expiry_timeout
@@ -266,9 +220,8 @@ module Pompa
           name = opts.delete(:name) || self.worker_class_name
           head = !!opts.delete(:head)
 
-          message[:request_id] ||= opts[:request_id] ||
-            Pompa::Utils.utils
-          message[:reply_to] ||= "#{ANONYMOUS}:#{Pompa::Utils.uuid}"
+          message[:request_id] ||= opts[:request_id] || Pompa::Utils.uuid
+          message[:reply_to] ||= reply_queue_key_name
           message[:expires] ||= (timeout * 2).seconds.from_now
 
           queue_key_name = message_queue_key_name(instance_id, name)
@@ -313,31 +266,28 @@ module Pompa
 
           message[:reply_to] ||= opts[:reply_to]
 
-          result = []
-
           Pompa::RedisConnection.redis(opts) do |r|
+            if message[:reply_to].nil?
+              message[:reply_to] = reply_queue_key_name
+              r.expire(message[:reply_to], timeout)
+            end
+
             r.pipelined do |p|
               Array(instance_id).each do |i|
                 queue_key_name = message_queue_key_name(i, name)
-                message[:request_id] ||= opts[:request_id] ||
-                  Pompa::Utils.uuid
+                message[:request_id] ||= opts[:request_id] || Pompa::Utils.uuid
 
                 if head
                   p.lpush(queue_key_name, message.to_json)
                 else
                   p.rpush(queue_key_name, message.to_json)
                 end
-
-                result << message[:request_id]
               end
             end
           end
 
-          return result
+          return message[:reply_to]
         end
-
-      private
-        CLASS = 'Class'.freeze
     end
   end
 end

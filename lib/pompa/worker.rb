@@ -5,12 +5,12 @@ require 'redis/queue'
 require 'pompa/utils'
 require 'pompa/multi_logger'
 require 'pompa/redis_connection'
-require 'pompa/worker/const'
+require 'pompa/worker/state'
 require 'pompa/worker/control'
 
 module Pompa
   module Worker
-    include Const
+    include State
     include Control
 
     include Pompa::MultiLogger
