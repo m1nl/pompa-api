@@ -3,15 +3,15 @@ require 'pompa/multi_logger'
 class ApplicationController < ActionController::API
   include Pompa::MultiLogger
 
-  rescue_from ActiveRecord::RecordNotFound, :with => :record_not_found
-  rescue_from ActiveRecord::RecordNotUnique, :with => :record_not_unique
-  rescue_from ActiveRecord::RecordInvalid, :with => :record_invalid
-  rescue_from ActiveRecord::InvalidForeignKey, :with => :record_referenced
-
   if Rails.env.production?
     rescue_from ActiveRecord::ConfigurationError, :with => :query_invalid
     rescue_from ActiveRecord::StatementInvalid, :with => :query_invalid
   end
+
+  rescue_from ActiveRecord::RecordNotFound, :with => :record_not_found
+  rescue_from ActiveRecord::RecordNotUnique, :with => :record_not_unique
+  rescue_from ActiveRecord::RecordInvalid, :with => :record_invalid
+  rescue_from ActiveRecord::InvalidForeignKey, :with => :record_referenced
 
   NOT_FOUND = 'is not found'.freeze
   NOT_UNIQUE = 'is not unique'.freeze
