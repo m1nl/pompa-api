@@ -33,12 +33,13 @@ Rails.application.routes.draw do
       post '/campaigns/:id/start', to: 'campaigns#start'
       post '/campaigns/:id/pause', to: 'campaigns#pause'
       post '/campaigns/:id/finish', to: 'campaigns#finish'
-      post '/campaigns/:id/synchronize-events', to: 'campaigns#synchronize_events'
 
       get '/resources/:id/download', to: 'resources#download'
       match '/resources/:id/upload', via: [:post, :put], to: 'resources#upload'
 
       get '/events/series/:period', to: 'events#series'
+
+      get '/workers/replies/:queue_id', to: 'workers#replies'
     end
 
     if Rails.configuration.pompa.endpoints.public

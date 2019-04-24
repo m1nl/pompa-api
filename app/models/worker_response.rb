@@ -26,7 +26,7 @@ class WorkerResponse
         :status => response.dig(:result, :status),
         :value => response.dig(:result, :value),
         :broadcast => response.dig(:broadcast) || false,
-        :result => response.dig(:result).except(:status, :value),
+        :result => (response.dig(:result) || {}).except(:status, :value),
         :worker_id => response.dig(:origin, :id),
       )
     end

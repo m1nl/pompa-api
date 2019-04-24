@@ -3,7 +3,11 @@ require 'pompa'
 module Renderable
   extend ActiveSupport::Concern
 
-  CONTENT_LOCATION = 'Content-Location'.freeze
+  included do
+    extend RenderableClassMethods
+  end
+
+  LOCATION = 'Location'.freeze
   DEFAULT_SORT = { :id => :asc }.freeze
 
   protected
@@ -70,78 +74,83 @@ module Renderable
       render({ json: { :errors => errors }}.merge!(opts))
     end
 
-    def render_worker_response(worker_response, opts = {})
-      response.set_header(CONTENT_LOCATION, worker_path(
-        id: worker_response.worker_id)) if !worker_response.worker_id.nil?
+    def render_worker_request(reply_queue_key_name, opts = {})
+      queue_id = Worker.reply_queue_id(reply_queue_key_name)
 
-      if response.status == Pompa::Worker::TIMEOUT
+      location = Rails.application.routes.url_helpers.url_for(
+        :controller => :workers, :action => :replies, :only_path => true,
+        :queue_id => queue_id)
+
+      response.set_header(LOCATION, location) if !location.nil?
+
+      head(opts.delete(:status) || :accepted)
+    end
+
+    def render_worker_response(worker_response, opts = {})
+      if worker_response.status == Worker::TIMEOUT
         response.status = :gateway_timeout
       else
-        response.status = opts.delete(:status) || :accepted
+        response.status = opts.delete(:status) || :ok
       end
 
       render({ json: worker_response, include: include_params }.merge!(opts))
     end
 
-    def self.included(o)
-      o.extend(RenderableClassMethods)
-    end
-
     module RenderableClassMethods
-      def recordset_apply(options)
-        apply = options.delete(:apply)
-        joins = options.delete(:joins)
-        params = options.delete(:params)
+        def recordset_apply(options)
+          apply = options.delete(:apply)
+          joins = options.delete(:joins)
+          params = options.delete(:params)
 
-        recordset = options.delete(:recordset)
-        recordset ||= self.model.all
+          recordset = options.delete(:recordset)
+          recordset ||= self.model.all
 
-        apply_params = params.slice(*model_columns)
+          apply_params = params.slice(*model_columns)
 
-        result = recordset
+          result = recordset
 
-        if apply.respond_to?(:call)
-          result = apply.call(result, apply_params, model)
-        elsif apply.is_a?(Symbol)
-          result = result.public_send(apply, apply_params)
-        end
-
-        params.slice(*model_associations).keys.each do |k|
-          association = self.model.reflections[k.to_s]
-          foreign_controller = "#{association.class_name.pluralize}Controller"
-            .constantize
-          if foreign_controller.respond_to?(:recordset_apply)
-
-            if joins.respond_to?(:call)
-              result = joins.call(result, association.name.to_sym)
-            elsif joins.is_a?(Symbol)
-              result = result.public_send(joins, association.name.to_sym)
-            end
-
-            result = result.merge(foreign_controller.recordset_apply(
-              {
-                :params => params[association.name],
-                :apply => apply,
-                :joins => joins
-              }))
+          if apply.respond_to?(:call)
+            result = apply.call(result, apply_params, model)
+          elsif apply.is_a?(Symbol)
+            result = result.public_send(apply, apply_params)
           end
+
+          params.slice(*model_associations).keys.each do |k|
+            association = self.model.reflections[k.to_s]
+            foreign_controller = "#{association.class_name.pluralize}Controller"
+              .constantize
+            if foreign_controller.respond_to?(:recordset_apply)
+
+              if joins.respond_to?(:call)
+                result = joins.call(result, association.name.to_sym)
+              elsif joins.is_a?(Symbol)
+                result = result.public_send(joins, association.name.to_sym)
+              end
+
+              result = result.merge(foreign_controller.recordset_apply(
+                {
+                  :params => params[association.name],
+                  :apply => apply,
+                  :joins => joins
+                }))
+            end
+          end
+
+          return result
         end
 
-        return result
-      end
+        def model
+          @model ||= "#{controller_name.camelize.singularize}".constantize
+        end
 
-      def model
-        @model ||= "#{controller_name.camelize.singularize}".constantize
-      end
+        def model_columns
+          @model_columns ||= model.column_names.clone.map(&:to_sym)
+        end
 
-      def model_columns
-        @model_columns ||= model.column_names.clone.map(&:to_sym)
-      end
-
-      def model_associations
-        @model_associations ||= model.reflect_on_all_associations
-          .map { |a| a.name.to_sym }
-      end
+        def model_associations
+          @model_associations ||= model.reflect_on_all_associations
+            .map { |a| a.name.to_sym }
+        end
     end
 
   private

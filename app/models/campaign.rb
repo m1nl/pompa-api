@@ -70,9 +70,8 @@ class Campaign < ApplicationRecord
   end
 
   def synchronize_events(opts = {})
-    self.class.synchronize_events(id)
+    self.class.synchronize_events(id, opts)
   end
-
 
   class << self
     def push_event(campaign_id, victim_id, goal_id, data = {}, opts = {})

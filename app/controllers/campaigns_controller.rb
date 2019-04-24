@@ -1,7 +1,7 @@
 class CampaignsController < ApplicationController
   include Renderable
 
-  before_action :set_campaign, only: [:show, :update, :destroy, :start, :pause, :finish, :synchronize_events]
+  before_action :set_campaign, only: [:show, :update, :destroy, :start, :pause, :finish]
 
   # GET /campaigns
   def index
@@ -42,26 +42,17 @@ class CampaignsController < ApplicationController
 
   # POST /campaigns/1/start
   def start
-    render_worker_response WorkerResponse.wrap(
-      @campaign.start(sync: true))
+    render_worker_request @campaign.start
   end
 
   # POST /campaigns/1/pause
   def pause
-    render_worker_response WorkerResponse.wrap(
-      @campaign.pause(sync: true))
+    render_worker_request @campaign.pause
   end
 
   # POST /campaigns/1/finish
   def finish
-    render_worker_response WorkerResponse.wrap(
-      @campaign.finish(sync: true))
-  end
-
-  # POST /campaigns/1/synchronize-events
-  def synchronize_events
-    @campaign.synchronize_events
-    head :no_content
+    render_worker_request @campaign.finish
   end
 
   protected

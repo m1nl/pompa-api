@@ -35,14 +35,12 @@ class VictimsController < ApplicationController
 
   # POST /victims/1/send-email
   def send_email
-    render_worker_response WorkerResponse.wrap(
-      @victim.send_email(:sync => true))
+    render_worker_request @victim.send_email
   end
 
   # POST /victims/1/reset-state
   def reset_state
-    render_worker_response WorkerResponse.wrap(
-      @victim.reset_state(:sync => true))
+    render_worker_request @victim.reset_state
   end
 
   private
