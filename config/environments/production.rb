@@ -86,7 +86,6 @@ Rails.application.configure do
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
 
-  # Disable unnecessary headers
-  config.middleware.delete ::ActionDispatch::RequestId
+  # Disable unnecessary header in production
   config.middleware.delete ::Rack::Runtime
 end
