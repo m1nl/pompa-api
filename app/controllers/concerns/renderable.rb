@@ -84,7 +84,7 @@ module Renderable
       response.set_header(LOCATION, location) if !location.nil?
       response.status = opts.delete(:status) || :accepted
 
-      render({ json: {} }.merge!(opts))
+      render({ json: { :status => :pending, :tracking => { :url => location } } }.merge!(opts))
     end
 
     def render_worker_response(worker_response, opts = {})
