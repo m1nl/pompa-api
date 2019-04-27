@@ -8,6 +8,7 @@ class Target < ApplicationRecord
   MALE = 'male'.freeze
 
   CSV_ROW = [:first_name, :last_name, :email, :gender, :department, :comment, :group_id].freeze
+  CSV_OPTIONS = { col_sep: ",", quote_char:'"' }.freeze
 
   belongs_to :group, required: true
   has_one :victim, required: false
@@ -34,9 +35,10 @@ class Target < ApplicationRecord
       ActiveRecord::Base.transaction do
         targets = []
 
-        CSV.foreach(file.path) do |r|
-          target = Hash[CSV_ROW.zip(r)].merge(params)
-          targets << Target.new(target)
+        CSV.foreach(file.path, CSV_OPTIONS) do |r|
+          target_attributes = Hash[CSV_ROW.zip(r)].merge(params.symbolize_keys)
+            .slice(*Target.column_names.map(&:to_sym))
+          targets << Target.new(target_attributes)
 
           if targets.length >= batch_size
             ids.concat Target.import(targets, validate => true)[:ids]

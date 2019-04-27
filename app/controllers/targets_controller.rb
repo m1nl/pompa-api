@@ -46,13 +46,13 @@ class TargetsController < ApplicationController
   # PUT /targets/upload
   def upload
     begin
-      hash = params.permit(:file, :group_id).to_unsafe_h
+      hash = params.permit(:file, :group_id, :"Content-Type").to_unsafe_h
       Target.upload_csv(hash.delete(:file), hash)
       head :no_content
     rescue CSV::MalformedCSVError, ArgumentError => e
       multi_logger.error{"Unable to parse CSV file, #{e.class}: #{e.message}"}
       multi_logger.backtrace(e)
-      head :bad_request
+      render_errors({ :file => [ e.message ] }, { status: :bad_request })
     end
   end
 
