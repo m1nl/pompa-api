@@ -1,7 +1,7 @@
 class TemplatesController < ApplicationController
   include Renderable
 
-  before_action :set_template, only: [:show, :update, :destroy]
+  before_action :set_template, only: [:show, :update, :destroy, :duplicate]
 
   # GET /templates
   def index
@@ -38,6 +38,11 @@ class TemplatesController < ApplicationController
   # DELETE /templates/1
   def destroy
     @template.destroy
+  end
+
+  # POST /templates/1/duplicate
+  def duplicate
+    render_instance @template.duplicate
   end
 
   protected

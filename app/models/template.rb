@@ -79,7 +79,8 @@ class Template < ApplicationRecord
 
   def duplicate
     copy = dup
-    copy.name = "#{copy.name} (copy)"
+    copy.name = "#{copy.name} (copy)" while Template.exists?(
+      :name => copy.name)
 
     ActiveRecord::Base.transaction do
       copy.save!
@@ -94,6 +95,8 @@ class Template < ApplicationRecord
         a.save!
       end
     end
+
+    return copy
   end
 
   private

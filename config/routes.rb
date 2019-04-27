@@ -37,6 +37,8 @@ Rails.application.routes.draw do
       get '/resources/:id/download', to: 'resources#download'
       match '/resources/:id/upload', via: [:post, :put], to: 'resources#upload'
 
+      post '/templates/:id/duplicate', to: 'templates#duplicate'
+
       get '/events/series/:period', to: 'events#series'
 
       get '/workers/replies/:queue_id', to: 'workers#replies'
