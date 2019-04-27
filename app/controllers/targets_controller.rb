@@ -46,7 +46,7 @@ class TargetsController < ApplicationController
   # PUT /targets/upload
   def upload
     begin
-      hash = params.permit(:file, :group_id, :"Content-Type").to_unsafe_h
+      hash = params.permit(:file, :group_id, :'Content-Type').to_unsafe_h
       Target.upload_csv(hash.delete(:file), hash)
       head :no_content
     rescue CSV::MalformedCSVError, ArgumentError => e

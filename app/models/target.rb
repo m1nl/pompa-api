@@ -8,7 +8,7 @@ class Target < ApplicationRecord
   MALE = 'male'.freeze
 
   CSV_ROW = [:first_name, :last_name, :email, :gender, :department, :comment, :group_id].freeze
-  CSV_OPTIONS = { col_sep: ",", quote_char:'"' }.freeze
+  CSV_OPTIONS = { col_sep: ',', quote_char:'"' }.freeze
 
   belongs_to :group, required: true
   has_one :victim, required: false
@@ -16,7 +16,7 @@ class Target < ApplicationRecord
     class_name: 'TargetQuicksearch'
 
   validates :first_name, :last_name, :email, presence: true
-  validates :email, format: { with: /@/, message: "provide a valid email" }
+  validates :email, format: { with: /@/, message: 'provide a valid email' }
   validates :gender, inclusion: { in: [FEMALE, MALE, nil] }
 
   nullify_blanks :gender, :department, :comment
