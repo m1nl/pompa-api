@@ -17,6 +17,7 @@ default: &default
   trusted_proxies: # trusted IPs of proxies in order to handle X-Forwarded-For header correctly
     - "127.0.0.1"
     - "::1"
+  sendfile_header: "" # configure header to be used for x-sendfile acceleration
   endpoints: # backend endpoints to be enabled for this instance
     admin: true
     public: true

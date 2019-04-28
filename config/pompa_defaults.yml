@@ -14,6 +14,7 @@ default: &default
   trusted_proxies:
     - "127.0.0.1"
     - "::1"
+  sendfile_header: ""
   endpoints:
     admin: true
     public: true
@@ -55,7 +56,6 @@ default: &default
 
 production:
   <<: *default
-  sendfile_header: "X-Accel-Redirect"
   redis:
     <<: *redis_default
     db: 1
