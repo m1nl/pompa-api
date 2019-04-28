@@ -19,13 +19,13 @@ class WorkerJob < ApplicationJob
 
   protected
     def claim
-      model_class.claim_jid(@instance_id, job_id) ||
+      model_class.claim_jid(instance_id, job_id) ||
         (raise Pompa::Worker::InvalidStateException.new(
            'unable to claim jid for model instance'))
     end
 
     def release
-      model_class.release_jid(@instance_id, job_id) ||
+      model_class.release_jid(instance_id, job_id) ||
         (raise Pompa::Worker::InvalidStateException.new(
            'unable to release jid for model instance'))
     end
@@ -34,7 +34,7 @@ class WorkerJob < ApplicationJob
       job_id = self.job_id
       ActiveRecord::Base.connection.clear_query_cache
 
-      @model = model_class.find_by_id(@instance_id) ||
+      @model = model_class.find_by_id(instance_id) ||
         (raise Pompa::Worker::InvalidInstanceException.new(
            'instance not found'))
       model.claim_jid(job_id) ||

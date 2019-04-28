@@ -140,7 +140,7 @@ class TemplateExportJob < ApplicationJob
     ###
 
     def zip_path_key_name
-      self.class.zip_path_key_name(@instance_id)
+      self.class.zip_path_key_name(instance_id)
     end
 
   private

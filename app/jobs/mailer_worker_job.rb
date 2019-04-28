@@ -319,6 +319,6 @@ class MailerWorkerJob < WorkerJob
     ###
 
     def mail_queue_key_name
-      self.class.mail_queue_key_name(@instance_id)
+      self.class.mail_queue_key_name(instance_id)
     end
 end

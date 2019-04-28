@@ -12,6 +12,12 @@ class TemplateImportJob < ApplicationJob
       file_path = opts.delete(:file_path)
 
       return result(INVALID) if file_path.blank? || !File.file?(file_path)
+
+      mark
+    end
+
+    def mark
+      true
     end
 
     def finished?

@@ -279,10 +279,10 @@ class CampaignWorkerJob < WorkerJob
     ###
 
     def queued_victims_set_name
-      self.class.queued_victims_set_name(@instance_id)
+      self.class.queued_victims_set_name(instance_id)
     end
 
     def error_count_key_name
-      self.class.error_count_key_name(@instance_id)
+      self.class.error_count_key_name(instance_id)
     end
 end
