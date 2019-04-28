@@ -63,5 +63,9 @@ module PompaApi
 
     # Enable verbose query logs (only in debug log level)
     config.active_record.verbose_query_logs = true
+
+    # Specifies the header that your server uses for sending files
+    config.action_dispatch.x_sendfile_header = Rails.configuration.pompa
+      .sendfile_header if !Rails.configuration.pompa.sendfile_header.blank?
   end
 end

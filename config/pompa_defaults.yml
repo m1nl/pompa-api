@@ -55,6 +55,7 @@ default: &default
 
 production:
   <<: *default
+  sendfile_header: "X-Accel-Redirect"
   redis:
     <<: *redis_default
     db: 1
