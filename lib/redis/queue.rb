@@ -63,9 +63,9 @@ class Redis
       timeout = @timeout if timeout.nil?
 
       if non_block
-        return @redis.rpoplpush(@queue_name,@process_queue_name)
+        return @redis.rpoplpush(@queue_name, @process_queue_name)
       else
-        return @redis.brpoplpush(@queue_name,@process_queue_name, :timeout => timeout)
+        return @redis.brpoplpush(@queue_name, @process_queue_name, :timeout => timeout)
       end
     end
 
