@@ -121,6 +121,10 @@ class TemplateExportJob < ApplicationJob
       return zip_file_response
     end
 
+    def tick
+      true
+    end
+
     def finished?
       idle_for > expiry_timeout
     end
