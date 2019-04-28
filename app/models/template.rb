@@ -99,6 +99,12 @@ class Template < ApplicationRecord
     return copy
   end
 
+  def export
+    Worker.reply_queue_key_name.tap { |q|
+      TemplateExportJob.perform_later(:template_id => id, :reply_to => q)
+    }
+  end
+
   private
     class TemplateFilters < Module
       def initialize(template, model, opts = {})

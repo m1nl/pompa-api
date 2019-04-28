@@ -14,17 +14,19 @@ module Pompa
 
         opts[:pool] ||= redis if defined?(redis)
 
-        Pompa::RedisConnection.redis(opts) do |r|
-          r.pipelined do |p|
-            Array(instance_id).each do |i|
-              queue_name = resync_key_name(i, name)
-              p.setex(queue_name, timeout, 1)
+        with_worker_lock(opts.merge(:instance_id => instance_id)) do
+          Pompa::RedisConnection.redis(opts) do |r|
+            r.pipelined do |p|
+              Array(instance_id).each do |i|
+                queue_name = resync_key_name(i, name)
+                p.setex(queue_name, timeout, 1)
+              end
             end
           end
-        end
 
-        return ping(opts.merge(:name => name, :instance_id => instance_id,
-          :timeout => timeout, :head => true))
+          return ping(opts.merge(:name => name, :instance_id => instance_id,
+            :timeout => timeout, :head => true))
+        end
       end
 
       def cancel(opts = {})
@@ -35,17 +37,19 @@ module Pompa
 
         opts[:pool] ||= redis if defined?(redis)
 
-        Pompa::RedisConnection.redis(opts) do |r|
-          r.pipelined do |p|
-            Array(instance_id).each do |i|
-              queue_name = cancel_key_name(i, name)
-              p.setex(queue_name, timeout, discard ? CANCEL_DISCARD : CANCEL_NORMAL)
+        with_worker_lock(opts.merge(:instance_id => instance_id)) do
+          Pompa::RedisConnection.redis(opts) do |r|
+            r.pipelined do |p|
+              Array(instance_id).each do |i|
+                queue_name = cancel_key_name(i, name)
+                p.setex(queue_name, timeout, discard ? CANCEL_DISCARD : CANCEL_NORMAL)
+              end
             end
           end
-        end
 
-        return ping(opts.merge(:name => name, :instance_id => instance_id,
-          :timeout => timeout, :head => true))
+          return ping(opts.merge(:name => name, :instance_id => instance_id,
+            :timeout => timeout, :head => true))
+        end
       end
 
       def discard(opts = {})
@@ -55,21 +59,23 @@ module Pompa
 
         opts[:pool] ||= redis if defined?(redis)
 
-        Pompa::RedisConnection.redis(opts) do |r|
-          r.pipelined do |p|
-            Array(instance_id).each do |i|
-              p.multi do |m|
-                m.del(resync_key_name(i, name))
-                m.del(cancel_key_name(i, name))
-                m.del(message_queue_key_name(i, name))
-                m.del(message_process_queue_key_name(i, name))
-                m.del(subscribe_key_name(i, name))
-                m.del(last_active_key_name(i, name))
-                m.del(worker_state_key_name(i, name))
+        with_worker_lock(opts.merge(:instance_id => instance_id)) do
+          Pompa::RedisConnection.redis(opts) do |r|
+            r.pipelined do |p|
+              Array(instance_id).each do |i|
+                p.multi do |m|
+                  m.del(resync_key_name(i, name))
+                  m.del(cancel_key_name(i, name))
+                  m.del(message_queue_key_name(i, name))
+                  m.del(message_process_queue_key_name(i, name))
+                  m.del(subscribe_key_name(i, name))
+                  m.del(last_active_key_name(i, name))
+                  m.del(worker_state_key_name(i, name))
 
-                worker_class.cleanup(opts.merge(:name => name, :instance_id => i,
-                  :timeout => timeout, :redis => m)) if worker_class
-                  .respond_to?(:cleanup)
+                  worker_class.cleanup(opts.merge(:name => name, :instance_id => i,
+                    :timeout => timeout, :redis => m)) if worker_class
+                    .respond_to?(:cleanup)
+                end
               end
             end
           end
@@ -79,16 +85,21 @@ module Pompa
       end
 
       def subscribe(queue_name, opts = {})
+        timeout = opts.delete(:timeout) || expiry_timeout
         instance_id = opts.delete(:instance_id) || self.instance_id
         name = opts.delete(:name) || self.worker_class_name
 
         opts[:pool] ||= redis if defined?(redis)
 
-        Pompa::RedisConnection.redis(opts) do |r|
-          r.pipelined do |p|
-            Array(instance_id).each do |i|
-              r.sadd(subscribe_key_name(i, name),
-                queue_name)
+        with_worker_lock(opts.merge(:instance_id => instance_id)) do
+          Pompa::RedisConnection.redis(opts) do |r|
+            queue_name = reply_queue_key_name if queue_name.blank?
+
+            r.pipelined do |p|
+              Array(instance_id).each { |i|
+                r.sadd(subscribe_key_name(i, name),
+                  queue_name)
+              }
             end
           end
         end
@@ -100,11 +111,13 @@ module Pompa
 
         opts[:pool] ||= redis if defined?(redis)
 
-        Pompa::RedisConnection.redis(opts) do |r|
-          r.pipelined do |p|
-            Array(instance_id).each do |i|
-              r.srem(subscribe_key_name(i, name),
-                queue_name)
+        with_worker_lock(opts.merge(:instance_id => instance_id)) do
+          Pompa::RedisConnection.redis(opts) do |r|
+            r.pipelined do |p|
+              Array(instance_id).each { |i|
+                r.srem(subscribe_key_name(i, name),
+                  queue_name)
+              }
             end
           end
         end
@@ -118,23 +131,28 @@ module Pompa
 
         opts[:pool] ||= redis if defined?(redis)
 
-        return message_async(message,
-          opts.merge(:instance_id => instance_id)) unless sync
+        with_worker_lock(opts.merge(:instance_id => instance_id)) do
+          return message_async(message,
+            opts.merge(:instance_id => instance_id)) unless sync
 
-        result = []
-        Array(instance_id).each do |i|
-          result << message_sync(message, opts.merge(:instance_id => i))
+          result = []
+          Array(instance_id).each do |i|
+            result << message_sync(message, opts.merge(:instance_id => i))
+          end
+
+          return result.length == 1 ? result.first : result
         end
-
-        return result.length == 1 ? result.first : result
       end
 
       def ping(opts = {})
+        instance_id = opts.delete(:instance_id)
         timeout = opts.delete(:timeout) || expiry_timeout
 
-        return message(PING.deep_dup.merge(
-          :expires => timeout.seconds.from_now), opts.merge(
-            :timeout => timeout))
+        with_worker_lock(opts.merge(:instance_id => instance_id)) do
+          return message(PING.deep_dup.merge(
+            :expires => timeout.seconds.from_now), opts.merge(
+              :timeout => timeout))
+        end
       end
 
       ### Locking
@@ -221,12 +239,14 @@ module Pompa
           head = !!opts.delete(:head)
 
           message[:request_id] ||= opts[:request_id] || Pompa::Utils.uuid
-          message[:reply_to] ||= reply_queue_key_name
-          message[:expires] ||= (timeout * 2).seconds.from_now
+          message[:expires] ||= timeout.seconds.from_now
 
           queue_key_name = message_queue_key_name(instance_id, name)
 
           Pompa::RedisConnection.redis(opts) do |r|
+            message[:reply_to] = reply_queue_key_name if message[:reply_to]
+              .blank?
+
             if head
               r.lpush(queue_key_name, message.to_json)
             else
@@ -244,7 +264,6 @@ module Pompa
             worker_lock(opts.merge(:redis => r,
               :instance_id => instance_id, :name => name)) if locked
 
-            r.expire(message[:reply_to], timeout)
             return TIMEOUT_RESPONSE if response.nil?
 
             json = response[1]
@@ -265,12 +284,11 @@ module Pompa
           head = !!opts.delete(:head)
 
           message[:reply_to] ||= opts[:reply_to]
+          message[:expires] ||= timeout.seconds.from_now
 
           Pompa::RedisConnection.redis(opts) do |r|
-            if message[:reply_to].nil?
-              message[:reply_to] = reply_queue_key_name
-              r.expire(message[:reply_to], timeout)
-            end
+            message[:reply_to] = reply_queue_key_name if message[:reply_to]
+              .blank?
 
             r.pipelined do |p|
               Array(instance_id).each do |i|

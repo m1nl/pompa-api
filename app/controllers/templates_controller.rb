@@ -1,7 +1,7 @@
 class TemplatesController < ApplicationController
   include Renderable
 
-  before_action :set_template, only: [:show, :update, :destroy, :duplicate]
+  before_action :set_template, only: [:show, :update, :destroy, :duplicate, :export]
 
   # GET /templates
   def index
@@ -43,6 +43,11 @@ class TemplatesController < ApplicationController
   # POST /templates/1/duplicate
   def duplicate
     render_instance @template.duplicate
+  end
+
+  # POST /templates/1/export
+  def export
+    render_worker_request @template.export
   end
 
   protected

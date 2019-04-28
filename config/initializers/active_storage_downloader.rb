@@ -15,6 +15,12 @@ module ActiveStorage
       end
     end
 
+    def download_blob_to_file(file)
+      download_blob_to file
+      verify_integrity_of file
+      file
+    end
+
     private
       attr_reader :blob, :tempdir
 

@@ -15,8 +15,8 @@ module Pompa
 
     include Pompa::MultiLogger
 
-    def perform(_instance_id = nil, opts = {})
-      @instance_id = _instance_id
+    def perform(opts = {})
+      @instance_id = opts[:instance_id]
       @started_at = Time.current
 
       if !try_claim
@@ -33,7 +33,7 @@ module Pompa
 
       self.worker_state = INITIALIZING
 
-      logger.info("Started #{worker_class_name} ##{instance_id}")
+      logger.info("Started #{worker_class_name} ##{instance_id} (#{job_id})")
 
       @worker = ::Worker.create(:id => job_id, :instance_id => instance_id,
         :worker_class_name => worker_class_name,
@@ -58,7 +58,7 @@ module Pompa
       self.worker_state = RUNNING
 
       begin
-        invoke(opts)
+        response(invoke(opts), opts[:reply_to])
       rescue StandardError => e
         logger.error("Unrecoverable error during invoke " +
           "#{e.class}: #{e.message}. Exiting...")
@@ -129,7 +129,7 @@ module Pompa
 
         if worker_state == RESPAWN
           logger.info("Attempting to respawn worker")
-          self.class.perform_later(instance_id, opts)
+          self.class.perform_later(opts)
         end
       ensure
         begin
@@ -181,7 +181,7 @@ module Pompa
       end
 
       def finished?
-        model.nil?
+        false
       end
 
       def respawn?
@@ -227,10 +227,6 @@ module Pompa
         @started_at
       end
 
-      def instance_id
-        @instance_id
-      end
-
       def worker
         @worker
       end
@@ -265,7 +261,6 @@ module Pompa
         }.merge!(opts)
       end
 
-    private
       def response(message, recipient = nil)
         return if !message.is_a?(Hash)
 
@@ -306,6 +301,7 @@ module Pompa
         end
       end
 
+    private
       def parse_and_process(json)
         if json.blank?
           return INVALID

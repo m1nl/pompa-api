@@ -13,6 +13,10 @@ class WorkerJob < ApplicationJob
     end
   end
 
+  def instance_id
+    @instance_id
+  end
+
   protected
     def claim
       model_class.claim_jid(@instance_id, job_id) ||
@@ -51,6 +55,10 @@ class WorkerJob < ApplicationJob
                'unable to claim jid for model instance'))
         end
       end
+    end
+
+    def finished?
+      model.nil?
     end
 
     def model

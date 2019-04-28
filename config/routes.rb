@@ -38,10 +38,12 @@ Rails.application.routes.draw do
       match '/resources/:id/upload', via: [:post, :put], to: 'resources#upload'
 
       post '/templates/:id/duplicate', to: 'templates#duplicate'
+      post '/templates/:id/export', to: 'templates#export'
 
       get '/events/series/:period', to: 'events#series'
 
       get '/workers/replies/:queue_id', to: 'workers#replies'
+      get '/workers/files/:queue_id', to: 'workers#files'
     end
 
     if Rails.configuration.pompa.endpoints.public

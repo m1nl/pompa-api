@@ -35,12 +35,8 @@ module WorkerModel
       self.class.public_send(m, instance_id, opts)
     end }
 
-  [:resync, :cancel, :discard, :ping].each { |m| define_method m do |opts = {}|
+  [:resync, :cancel, :ping].each { |m| define_method m do |opts = {}|
       self.class.public_send(m, opts.merge(:instance_id => instance_id))
-  end }
-
-  [:subscribe, :unsubscribe].each { |m| define_method m do |queue_name, opts = {}|
-      self.class.public_send(m, queue_name, opts.merge(:instance_id => instance_id))
   end }
 
   [:message].each { |m| define_method m do |message, opts = {}|
@@ -144,8 +140,8 @@ module WorkerModel
         with_worker_lock(opts.merge(:instance_id => instance_id)) do
           return if !opts.delete(:force) && worker_active?(instance_id, opts)
 
-          worker_class.perform_later(instance_id,
-            opts.except(*Pompa::Worker::REDIS_OPTS))
+          worker_class.perform_later(opts.merge(:instance_id => instance_id)
+            .except(*Pompa::Worker::REDIS_OPTS))
           worker_started!(instance_id, opts)
         end
       end
@@ -221,27 +217,6 @@ module WorkerModel
 
           super(opts.merge(:instance_id => instance_id))
         end
-      end
-
-      def discard(opts = {})
-        instance_id = opts.delete(:instance_id)
-
-        with_worker_lock(opts.merge(:instance_id => instance_id)) {
-          super(opts.merge(:instance_id => instance_id)) }
-      end
-
-      def subscribe(queue_name, opts = {})
-        instance_id = opts.delete(:instance_id)
-
-        with_worker_lock(opts.merge(:instance_id => instance_id)) {
-          super(queue_name, opts.merge(:instance_id => instance_id)) }
-      end
-
-      def unsubscribe(queue_name, opts = {})
-        instance_id = opts.delete(:instance_id)
-
-        with_worker_lock(opts.merge(:instance_id => instance_id)) {
-          super(queue_name, opts.merge(:instance_id => instance_id)) }
       end
 
       def message(message, opts = {})

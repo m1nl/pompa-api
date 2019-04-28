@@ -5,11 +5,13 @@ class Worker
   extend ActiveModel::Naming
 
   extend Pompa::Worker::State
+  extend Pompa::Worker::Control
 
   include ActiveModel::Model
   include ActiveModel::Serialization
 
   include Pompa::Worker::State
+  include Pompa::Worker::Control
 
   attr_accessor :id, :instance_id, :worker_class_name, :message_queue, :started_at
   validates :id, :instance_id, :worker_class_name, :message_queue, presence: true

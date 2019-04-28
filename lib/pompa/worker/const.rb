@@ -18,6 +18,7 @@ module Pompa
       INVALID = 'invalid'.freeze
       ERROR = 'error'.freeze
       TIMEOUT = 'timeout'.freeze
+      FILE = 'file'.freeze
 
       TIMEOUT_RESPONSE = { :result => { :status => TIMEOUT } }.freeze
       INVALID_RESPONSE = { :result => { :status => INVALID } }.freeze
