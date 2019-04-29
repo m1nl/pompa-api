@@ -389,7 +389,11 @@ module Pompa
         destroy
         worker.destroy(:pool => redis) unless worker.nil?
 
-        discard if discarded? || finished?
+        if discarded? || finished?
+          logger.info("Attempting to discard worker")
+          discard
+        end
+
         redis.with { |r| r.del(cancel_key_name) }
 
         return true
