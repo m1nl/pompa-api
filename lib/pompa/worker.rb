@@ -202,7 +202,6 @@ module Pompa
 
       def worker_state=(value)
         with_worker_lock(:pool => redis) do |r|
-          mark
           r.set(worker_state_key_name, value)
           response(result(WORKER_STATE_CHANGE, value, :broadcast => true))
         end
