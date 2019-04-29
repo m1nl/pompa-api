@@ -11,7 +11,6 @@ module Pompa
       end
 
       def worker_class_name
-        return super if defined?(super)
         return self.class.name if self.class.name != CLASS
         return self.name
       end
