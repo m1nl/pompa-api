@@ -22,7 +22,7 @@ class TemplateExportJob < ApplicationJob
     def cleanup(opts)
       Pompa::RedisConnection.redis(opts) do |r|
         zip_path = r.get(zip_path_key_name(opts[:instance_id]))
-        File.delete(zip_path) if !zip_path.blank && File.file?(zip_path)
+        File.delete(zip_path) if !zip_path.blank? && File.file?(zip_path)
 
         r.del(zip_path_key_name(opts[:instance_id]))
       end
