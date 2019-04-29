@@ -50,6 +50,13 @@ class TemplatesController < ApplicationController
     render_worker_request @template.export
   end
 
+  # POST /templates/import
+  # PUT /templates/import
+  def import
+    hash = params.permit(:file, :'Content-Type').to_unsafe_h
+    render_worker_request Template.import(hash[:file].path)
+  end
+
   protected
     def record_not_unique(error)
       render :json => { :errors => { :name => [NOT_UNIQUE] } },

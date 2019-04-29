@@ -87,6 +87,8 @@ class TemplateExportJob < ApplicationJob
                 ActiveStorage::Downloader.new(r.file.blob)
                   .download_blob_to_file(b)
               }
+
+              mark
             end
           end
 
@@ -128,6 +130,8 @@ class TemplateExportJob < ApplicationJob
     def finished?
       idle_for > expiry_timeout
     end
+
+    ###
 
     def zip_path
       redis.with { |r| r.get(zip_path_key_name) }

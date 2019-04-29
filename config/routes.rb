@@ -39,6 +39,7 @@ Rails.application.routes.draw do
 
       post '/templates/:id/duplicate', to: 'templates#duplicate'
       post '/templates/:id/export', to: 'templates#export'
+      match '/templates/import', via: [:post, :put], to: 'templates#import'
 
       get '/events/series/:period', to: 'events#series'
 

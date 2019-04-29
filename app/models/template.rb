@@ -105,6 +105,14 @@ class Template < ApplicationRecord
     }
   end
 
+  class << self
+    def import(zip_path)
+      Worker.reply_queue_key_name.tap { |q|
+        TemplateImportJob.perform_later(:zip_path => zip_path, :reply_to => q)
+      }
+    end
+  end
+
   private
     class TemplateFilters < Module
       def initialize(template, model, opts = {})
