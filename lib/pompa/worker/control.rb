@@ -71,13 +71,15 @@ module Pompa
                   m.del(subscribe_key_name(i, name))
                   m.del(last_active_key_name(i, name))
                   m.del(worker_state_key_name(i, name))
-
-                  worker_class.cleanup(opts.merge(:name => name, :instance_id => i,
-                    :timeout => timeout, :redis => m)) if worker_class
-                    .respond_to?(:cleanup)
                 end
               end
             end
+
+            Array(instance_id).each { |i|
+              worker_class.cleanup(opts.merge(:name => name, :instance_id => i,
+                :timeout => timeout, :redis => r)) if worker_class
+                .respond_to?(:cleanup)
+            }
           end
         end
 
