@@ -25,11 +25,16 @@ class TemplateExportJob < ApplicationJob
         File.delete(zip_path) if !zip_path.blank? && File.file?(zip_path)
 
         r.del(zip_path_key_name(opts[:instance_id]))
+        r.del(template_id_key_name(opts[:instance_id]))
       end
     end
 
     def zip_path_key_name(instance_id)
       "#{name}:#{instance_id}:zip_path"
+    end
+
+    def template_id_key_name(instance_id)
+      "#{name}:#{instance_id}:template_id"
     end
   end
 
@@ -37,7 +42,7 @@ class TemplateExportJob < ApplicationJob
     def invoke(opts = {})
       super(opts)
 
-      template_id = opts.delete(:template_id)
+      self.template_id = opts.delete(:template_id)
       return result(INVALID) if template_id.nil?
 
       template = Template.find_by_id(template_id)
@@ -141,16 +146,31 @@ class TemplateExportJob < ApplicationJob
       redis.with { |r| r.set(zip_path_key_name, value) }
     end
 
+    def template_id
+      redis.with { |r| r.get(template_id_key_name) }
+    end
+
+    def template_id=(value)
+      redis.with { |r| r.set(template_id_key_name, value) }
+    end
+
     ###
 
     def zip_path_key_name
       self.class.zip_path_key_name(instance_id)
     end
 
+    def template_id_key_name
+      self.class.template_id_key_name(instance_id)
+    end
+
   private
     def zip_file_response
+      timestamp = Time.now.utc.strftime("%y%m%d%H%M%S")
+      filename = "#{TEMPLATE}-#{template_id}-#{timestamp}.#{ZIP}"
+
       reply_queue = reply_queue_key_name
-      response(result(FILE, zip_path), reply_queue)
+      response(result(FILE, { path: zip_path, filename: filename }), reply_queue)
 
       location = Rails.application.routes.url_helpers.url_for(
         :controller => :workers, :action => :files, :only_path => true,

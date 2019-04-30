@@ -101,8 +101,10 @@ class WorkersController < ApplicationController
           return redirect_to location, status: :see_other
         else
           r.rpush(reply_queue, json) if request.method.downcase.to_sym != :get
-          path = message.dig(:result, :value)
-          return send_file(path) if File.file?(path)
+
+          path = message.dig(:result, :path)
+          filename = message.dig(:result, :filename)
+          return send_file(path, :filename => filename) if File.file?(path)
           return render status: :not_found
         end
       rescue JSON::ParserError => e
