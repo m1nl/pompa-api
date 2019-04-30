@@ -133,13 +133,15 @@ module Pompa
 
         opts[:pool] ||= redis if defined?(redis)
 
-        with_worker_lock(opts.merge(:instance_id => instance_id)) do
-          return message_async(message,
-            opts.merge(:instance_id => instance_id)) unless sync
-
+        Array(instance_id).each do |i|
           result = []
-          Array(instance_id).each do |i|
-            result << message_sync(message, opts.merge(:instance_id => i))
+
+          with_worker_lock(opts.merge(:instance_id => i)) do
+            if sync
+              result << message_sync(message, opts.merge(:instance_id => i))
+            else
+              result << message_async(message, opts.merge(:instance_id => i))
+            end
           end
 
           return result.length == 1 ? result.first : result
@@ -147,14 +149,11 @@ module Pompa
       end
 
       def ping(opts = {})
-        instance_id = opts.delete(:instance_id)
         timeout = opts.delete(:timeout) || expiry_timeout
 
-        with_worker_lock(opts.merge(:instance_id => instance_id)) do
-          return message(PING.deep_dup.merge(
-            :expires => timeout.seconds.from_now), opts.merge(
-              :timeout => timeout))
-        end
+        return message(PING.deep_dup.merge(
+          :expires => timeout.seconds.from_now), opts.merge(
+          :timeout => timeout))
       end
 
       ### Locking
@@ -240,6 +239,7 @@ module Pompa
           name = opts.delete(:name) || self.worker_class_name
           head = !!opts.delete(:head)
 
+          message[:reply_to] ||= opts[:reply_to]
           message[:request_id] ||= opts[:request_id] || Pompa::Utils.uuid
           message[:expires] ||= timeout.seconds.from_now
 
@@ -286,23 +286,19 @@ module Pompa
           head = !!opts.delete(:head)
 
           message[:reply_to] ||= opts[:reply_to]
+          message[:request_id] ||= opts[:request_id] || Pompa::Utils.uuid
           message[:expires] ||= timeout.seconds.from_now
+
+          queue_key_name = message_queue_key_name(instance_id, name)
 
           Pompa::RedisConnection.redis(opts) do |r|
             message[:reply_to] = reply_queue_key_name if message[:reply_to]
               .blank?
 
-            r.pipelined do |p|
-              Array(instance_id).each do |i|
-                queue_key_name = message_queue_key_name(i, name)
-                message[:request_id] ||= opts[:request_id] || Pompa::Utils.uuid
-
-                if head
-                  p.lpush(queue_key_name, message.to_json)
-                else
-                  p.rpush(queue_key_name, message.to_json)
-                end
-              end
+            if head
+              r.lpush(queue_key_name, message.to_json)
+            else
+              r.rpush(queue_key_name, message.to_json)
             end
           end
 
