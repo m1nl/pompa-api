@@ -31,15 +31,17 @@ class WorkersController < ApplicationController
     end
 
     reply_queue = Worker.reply_queue_key_name(params.slice(*[:queue_id]))
-    processing_queue = Worker.reply_queue_key_name
+    message = nil
 
     Pompa::RedisConnection.redis do |r|
       begin
-        json = r.rpoplpush(reply_queue, processing_queue)
+        json = r.rpop(reply_queue)
 
         if json.nil? && sync
-          json = r.brpoplpush(reply_queue, processing_queue,
-            :timeout => timeout)
+          response = r.brpop(reply_queue, :timeout => timeout)
+          return render status: :no_content if response.nil?
+
+          json = response[1]
         end
 
         return render status: :no_content if json.nil?
@@ -47,12 +49,14 @@ class WorkersController < ApplicationController
         message = JSON.parse(json, symbolize_names: true)
 
         if message.dig(:result, :status) == Worker::FILE
+          r.rpush(reply_queue, json)
+
           location = Rails.application.routes.url_helpers.url_for(
             :controller => :workers, :action => :files, :only_path => true,
-            :queue_id => Worker.reply_queue_id(processing_queue),
-            :sync => sync)
+            :queue_id => queue_id, :sync => sync)
           return redirect_to location, status: :see_other
         else
+          r.rpush(reply_queue, json) if request.method.downcase.to_sym != :get
           return render_worker_response WorkerResponse.wrap(message)
         end
       rescue JSON::ParserError => e
@@ -71,15 +75,14 @@ class WorkersController < ApplicationController
     end
 
     reply_queue = Worker.reply_queue_key_name(params.slice(*[:queue_id]))
-    processing_queue = Worker.reply_queue_key_name
+    message = nil
 
     Pompa::RedisConnection.redis do |r|
       begin
-        json = r.rpoplpush(reply_queue, processing_queue)
+        json = r.rpop(reply_queue)
 
         if json.nil? && sync
-          response = r.brpoplpush(reply_queue, processing_queue,
-            :timeout => timeout)
+          response = r.brpop(reply_queue, :timeout => timeout)
           return render status: :no_content if response.nil?
 
           json = response[1]
@@ -89,13 +92,18 @@ class WorkersController < ApplicationController
 
         message = JSON.parse(json, symbolize_names: true)
 
-        if message.dig(:result, :status) == Worker::FILE
+        if message.dig(:result, :status) != Worker::FILE
+          r.rpush(reply_queue, json)
+
+          location = Rails.application.routes.url_helpers.url_for(
+            :controller => :workers, :action => :replies, :only_path => true,
+            :queue_id => queue_id, :sync => sync)
+          return redirect_to location, status: :see_other
+        else
+          r.rpush(reply_queue, json) if request.method.downcase.to_sym != :get
           path = message.dig(:result, :value)
           return send_file(path) if File.file?(path)
           return render status: :not_found
-        else
-          r.lpush(reply_queue, r.rpop(processing_queue))
-          return render status: :no_content
         end
       rescue JSON::ParserError => e
         return render status: :no_content
