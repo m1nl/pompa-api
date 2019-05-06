@@ -52,7 +52,8 @@ module Pompa
       end
 
       def backtrace(e, severity = :error)
-        e.backtrace.each { |b| send(severity){"\t#{b.red}"} }
+        backtrace = Rails.backtrace_cleaner.clean(e.backtrace)
+        backtrace.each { |b| send(severity) {"\t#{b.red}"} }
       end
 
       private
