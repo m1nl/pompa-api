@@ -1,24 +1,13 @@
 source 'https://rubygems.org'
 
-git_source(:github) do |repo_name|
-  repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?('/')
-  "https://github.com/#{repo_name}.git"
-end
+gem 'rails', '~> 6.0.0.rc1'
 
-gem 'rails', '~> 5.2.0'
+gem 'pg', '~> 1.0.0'
+gem 'redis', '~> 4.0'
 
-if defined?(JRUBY_VERSION)
-  github 'jruby/activerecord-jdbc-adapter', branch: '52-stable' do
-    gem 'activerecord-jdbcpostgresql-adapter', :platform => :jruby
-  end
-else
-  gem 'pg', '~> 1.0.0'
-  gem 'redis', '~> 4.0'
-
-  gem 'concurrent-ruby-ext'
-  gem 'hiredis'
-  gem 'bootsnap'
-end
+gem 'concurrent-ruby-ext'
+gem 'hiredis'
+gem 'bootsnap'
 
 gem 'rack-cors'
 gem 'puma'
