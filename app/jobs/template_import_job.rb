@@ -132,7 +132,7 @@ class TemplateImportJob < ApplicationJob
     end
 
     def finished?
-      idle_for > expiry_timeout
+      true
     end
 
     ###
