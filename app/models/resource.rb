@@ -47,7 +47,7 @@ class Resource < ApplicationRecord
   end
 
   def file=(value)
-    result = file.attach(value)
+    result = super(value)
 
     if file.attached?
       self[:url] = nil
@@ -203,8 +203,7 @@ class Resource < ApplicationRecord
       c.code = Pompa::Utils.random_code
 
       if type == FILE
-        ActiveStorage::Downloader.new(file.blob)
-         .download_blob_to_tempfile do |f|
+        file.blob.open do |f|
           c.file.attach({ io: f, filename: file.blob.filename,
             content_type: file.blob.content_type })
         end

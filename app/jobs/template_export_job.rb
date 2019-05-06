@@ -88,9 +88,8 @@ class TemplateExportJob < ApplicationJob
               filename = "#{RESOURCE}-#{Digest::SHA1.hexdigest(r.name)}"
               input_filenames << filename
 
-              File.open(File.join(dir, filename), 'w') { |b|
-                ActiveStorage::Downloader.new(r.file.blob)
-                  .download_blob_to_file(b)
+              File.open(File.join(dir, filename), 'wb') { |f|
+                r.file.download { |c| f.write(c) }
               }
 
               mark
