@@ -144,7 +144,7 @@ GEM
     nokogiri (1.10.3)
       mini_portile2 (~> 2.4.0)
     nokogiri (1.10.3-java)
-    pg (1.0.0)
+    pg (1.1.4)
     public_suffix (3.0.3)
     puma (3.12.1)
     puma (3.12.1-java)
@@ -263,11 +263,11 @@ DEPENDENCIES
   liquid
   listen (~> 3.0.5)
   mail
-  pg (~> 1.0.0)
+  pg
   puma
   rack-cors
   rails (~> 6.0.0.rc1)
-  redis (~> 4.0)
+  redis
   rspec-rails
   rubyzip
   sidekiq
