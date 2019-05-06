@@ -73,6 +73,9 @@ GEM
     bootsnap (1.4.4-java)
       msgpack (~> 1.0)
     builder (3.2.3)
+    bullet (6.0.0)
+      activesupport (>= 3.0.0)
+      uniform_notifier (~> 1.11)
     byebug (11.0.1)
     case_transform (0.2)
       activesupport
@@ -82,7 +85,6 @@ GEM
       concurrent-ruby (= 1.1.5)
     connection_pool (2.2.2)
     crass (1.0.4)
-    diff-lcs (1.3)
     domain_name (0.5.20180417)
       unf (>= 0.0.5, < 1.0.0)
     encryptor (3.0.0)
@@ -185,23 +187,6 @@ GEM
     rb-inotify (0.10.0)
       ffi (~> 1.0)
     redis (4.1.1)
-    rspec-core (3.8.0)
-      rspec-support (~> 3.8.0)
-    rspec-expectations (3.8.3)
-      diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.8.0)
-    rspec-mocks (3.8.0)
-      diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.8.0)
-    rspec-rails (3.8.2)
-      actionpack (>= 3.0)
-      activesupport (>= 3.0)
-      railties (>= 3.0)
-      rspec-core (~> 3.8.0)
-      rspec-expectations (~> 3.8.0)
-      rspec-mocks (~> 3.8.0)
-      rspec-support (~> 3.8.0)
-    rspec-support (3.8.0)
     rubyzip (1.2.2)
     sidekiq (5.2.7)
       connection_pool (~> 2.2, >= 2.2.2)
@@ -231,6 +216,7 @@ GEM
       unf_ext
     unf (0.1.4-java)
     unf_ext (0.0.7.6)
+    uniform_notifier (1.12.1)
     validate_url (1.0.8)
       activemodel (>= 3.0.0)
       public_suffix
@@ -251,6 +237,7 @@ DEPENDENCIES
   attr_encrypted
   awesome_print
   bootsnap
+  bullet
   byebug
   colorize
   concurrent-ruby
@@ -261,14 +248,13 @@ DEPENDENCIES
   http
   kaminari
   liquid
-  listen (~> 3.0.5)
+  listen (>= 3.0.5, < 3.2)
   mail
   pg
   puma
   rack-cors
   rails (~> 6.0.0.rc1)
   redis
-  rspec-rails
   rubyzip
   sidekiq
   spring
