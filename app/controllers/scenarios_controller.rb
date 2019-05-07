@@ -33,7 +33,7 @@ class ScenariosController < ApplicationController
     if @scenario.save
       render_instance @scenario, status: :created, location: @scenario
     else
-      render_instance @scenario.errors, status: :unprocessable_entity
+      render_errors @scenario.errors, status: :unprocessable_entity
     end
   end
 
@@ -42,7 +42,7 @@ class ScenariosController < ApplicationController
     if @scenario.update(scenario_params)
       render_instance @scenario
     else
-      render_instance @scenario.errors, status: :unprocessable_entity
+      render_errors @scenario.errors, status: :unprocessable_entity
     end
   end
 
