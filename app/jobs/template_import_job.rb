@@ -21,8 +21,12 @@ class TemplateImportJob < ApplicationJob
       Pompa::RedisConnection.redis(opts) do |r|
         zip_path = r.get(zip_path_key_name(opts[:instance_id]))
         keep_file = !!r.get(keep_file_key_name(opts[:instance_id]))
-        File.delete(zip_path) if !keep_file && !zip_path.blank? &&
-          File.file?(zip_path)
+
+        begin
+          File.delete(zip_path) if !keep_file && !zip_path.blank? &&
+            File.file?(zip_path)
+        rescue StandardError
+        end
 
         r.del(zip_path_key_name(opts[:instance_id]))
         r.del(keep_file_key_name(opts[:instance_id]))
@@ -49,82 +53,126 @@ class TemplateImportJob < ApplicationJob
 
       template = nil
 
-      ActiveRecord::Base.transaction do
-        Zip::File.open(zip_path) do |zip_file|
-          entry = zip_file.find_entry(TEMPLATE_FILENAME)
-          json = entry.get_input_stream.read
-          hash = JSON.parse(json).deep_symbolize_keys!
+      begin
+        ActiveRecord::Base.transaction do
+          Zip::File.open(zip_path) do |zip_file|
+            entry = zip_file.find_entry(TEMPLATE_FILENAME)
+            raise TemplateImportException
+              .new("unable to find #{TEMPLATE_FILENAME} in archive") if entry.nil?
 
-          template = Template.new(
-            hash.slice(*Template.column_names.map(&:to_sym)))
-          template.name = "#{template.name} (imported)" while Template.exists?(
-            :name => template.name)
-          template.save!
+            json = entry.get_input_stream.read
+            hash = JSON.parse(json).deep_symbolize_keys!
 
-          entry = zip_file.find_entry(GOALS_FILENAME)
-          json = entry.get_input_stream.read
-          hash_array = JSON.parse(json)
+            template = Template.new(
+              hash.slice(*Template.column_names.map(&:to_sym)))
+            template.name = "#{template.name} (imported)" while Template.exists?(
+              :name => template.name)
+            template.save!
 
-          hash_array.each do |g|
-            goal = Goal.new(g.deep_symbolize_keys!.slice(
-              *Goal.column_names.map(&:to_sym) - [:template_id]))
-            goal.template_id = template.id
-            goal.save!
-          end
+            entry = zip_file.find_entry(GOALS_FILENAME)
+            raise TemplateImportException
+              .new("unable to find #{GOALS_FILENAME} in archive") if entry.nil?
 
-          entry = zip_file.find_entry(RESOURCES_FILENAME)
-          json = entry.get_input_stream.read
-          hash_array = JSON.parse(json)
+            json = entry.get_input_stream.read
+            hash_array = JSON.parse(json)
 
-          hash_array.each do |r|
-            resource = Resource.new(r.deep_symbolize_keys!.slice(
-              *Resource.column_names.map(&:to_sym) - [:template_id]))
-            resource.template_id = template.id
-
-            filename = "#{RESOURCE}-#{Digest::SHA1.hexdigest(resource.name)}"
-            entry = zip_file.find_entry(filename)
-
-            if !entry.nil? && !r[:file].nil?
-              temp_filename = Dir::Tmpname.create([RESOURCE]) { }
-
-              begin
-                entry.extract(temp_filename)
-                resource.file.attach({
-                  io: File.open(temp_filename, 'rb'),
-                  filename: r.dig(:file, :filename),
-                  content_type: r.dig(:file, :content_type)
-                })
-                mark
-              ensure
-                File.delete(temp_filename) if File.file?(temp_filename)
-              end
+            hash_array.each do |g|
+              goal = Goal.new(g.deep_symbolize_keys!.slice(
+                *Goal.column_names.map(&:to_sym) - [:template_id]))
+              goal.template_id = template.id
+              goal.save!
+            rescue StandardError => e
+              logger.error("Template import error: #{e.class.name}: #{e.message}")
+              multi_logger.backtrace(e)
+              return result(ERROR, "unable to import goals: #{e.message}")
             end
 
-            resource.save!
-          end
+            entry = zip_file.find_entry(RESOURCES_FILENAME)
+            raise TemplateImportException
+              .new("unable to find #{RESOURCES_FILENAME} in archive") if entry.nil?
 
-          entry = zip_file.find_entry(ATTACHMENTS_FILENAME)
-          json = entry.get_input_stream.read
-          hash_array = JSON.parse(json)
+            json = entry.get_input_stream.read
+            hash_array = JSON.parse(json)
 
-          hash_array.each do |a|
-            attachment = Attachment.new(a.deep_symbolize_keys!.slice(
-              *Attachment.column_names.map(&:to_sym) - [:template_id,
-              :resource_id]))
-            attachment.template_id = template.id
-            attachment.resource_id = template.resources.where(
-              :name => a[:resource_name]).pluck(:id).first
-            attachment.save!
+            hash_array.each do |r|
+              resource = Resource.new(r.deep_symbolize_keys!.slice(
+                *Resource.column_names.map(&:to_sym) - [:template_id]))
+              resource.template_id = template.id
+
+              filename = "#{RESOURCE}-#{Digest::SHA1.hexdigest(resource.name)}"
+              entry = zip_file.find_entry(filename)
+
+              if !entry.nil? && !r[:file].nil?
+                temp_filename = Dir::Tmpname.create([RESOURCE]) { }
+
+                begin
+                  entry.extract(temp_filename)
+                  resource.file.attach({
+                    io: File.open(temp_filename, 'rb'),
+                    filename: r.dig(:file, :filename),
+                    content_type: r.dig(:file, :content_type)
+                  })
+                  mark
+                ensure
+                  File.delete(temp_filename) if File.file?(temp_filename)
+                end
+              end
+
+              resource.save!
+            rescue StandardError => e
+              logger.error("Template import error: #{e.class.name}: #{e.message}")
+              multi_logger.backtrace(e)
+              return result(ERROR, "unable to import resources: #{e.message}")
+            end
+
+            entry = zip_file.find_entry(ATTACHMENTS_FILENAME)
+            raise TemplateImportException
+              .new("unable to find #{ATTACHMENTS_FILENAME} in archive") if entry.nil?
+
+            json = entry.get_input_stream.read
+            hash_array = JSON.parse(json)
+
+            hash_array.each do |a|
+              attachment = Attachment.new(a.deep_symbolize_keys!.slice(
+                *Attachment.column_names.map(&:to_sym) - [:template_id,
+                :resource_id]))
+              attachment.template_id = template.id
+              attachment.resource_id = template.resources.where(
+                :name => a[:resource_name]).pluck(:id).first
+              attachment.save!
+            rescue StandardError => e
+              logger.error("Template import error: #{e.class.name}: #{e.message}")
+              multi_logger.backtrace(e)
+              return result(ERROR, "unable to import attachments: #{e.message}")
+            end
           end
+        end
+      rescue Zip::Error => e
+        logger.error("Template import error: #{e.class.name}: #{e.message}")
+        multi_logger.backtrace(e)
+        return result(ERROR, "error reading ZIP archive: #{e.message}")
+      rescue JSON::ParserError => e
+        logger.error("Template import error: #{e.class.name}: #{e.message}")
+        multi_logger.backtrace(e)
+        return result(ERROR, "unable to parse JSON: #{e.message}")
+      rescue TemplateImportException => e
+        logger.error("Template import error: #{e.class.name}: #{e.message}")
+        multi_logger.backtrace(e)
+        return result(ERROR, "#{e.message}")
+      rescue StandardError => e
+        logger.error("Template import error: #{e.class.name}: #{e.message}")
+        multi_logger.backtrace(e)
+        return result(ERROR, "#{e.class.name}: #{e.message}")
+      ensure
+        begin
+          File.delete(zip_path) if !keep_file && File.file?(zip_path)
+        rescue StandardError
         end
       end
 
-      File.delete(zip_path) if !keep_file && File.file?(zip_path)
-
       mark
 
-      return result(SUCCESS, template.id) if !template.nil?
-      return result(FAILED)
+      return result(SUCCESS, template.id)
     end
 
     def tick
@@ -161,5 +209,9 @@ class TemplateImportJob < ApplicationJob
 
     def keep_file_key_name
       self.class.keep_file_key_name(instance_id)
+    end
+
+  private
+    class TemplateImportException < Exception
     end
 end

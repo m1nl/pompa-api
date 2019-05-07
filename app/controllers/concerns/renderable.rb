@@ -90,6 +90,8 @@ module Renderable
     def render_worker_response(worker_response, opts = {})
       if worker_response.status == Worker::TIMEOUT
         response.status = :gateway_timeout
+      elsif worker_response.status == Worker::FAILED
+        response.status = :internal_server_error
       else
         response.status = opts.delete(:status) || :ok
       end

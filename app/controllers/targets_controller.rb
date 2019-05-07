@@ -50,7 +50,7 @@ class TargetsController < ApplicationController
       Target.upload_csv(hash.delete(:file), hash)
       head :no_content
     rescue CSV::MalformedCSVError, ArgumentError => e
-      multi_logger.error{"Unable to parse CSV file, #{e.class}: #{e.message}"}
+      multi_logger.error{"Unable to parse CSV file: #{e.class}: #{e.message}"}
       multi_logger.backtrace(e)
       render_errors({ :file => [ e.message ] }, { status: :bad_request })
     end
