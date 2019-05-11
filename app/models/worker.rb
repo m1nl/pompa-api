@@ -1,5 +1,5 @@
 require 'pompa'
-require 'json'
+require 'oj'
 
 class Worker
   extend ActiveModel::Naming
@@ -94,12 +94,12 @@ class Worker
             json = r.get(w)
             next if json.blank?
 
-            hash = JSON.parse(json, symbolize_names: true)
+            hash = Oj.load(json, symbol_keys: true)
             worker = Worker.new(hash)
             next if !worker.valid?
 
             workers.push(worker)
-          rescue JSON::ParserError
+          rescue Oj::ParseError
           end
         end
       end
@@ -116,10 +116,10 @@ class Worker
           json = r.get(worker_key_name(id))
           return if json.blank?
 
-          hash = JSON.parse(json, symbolize_names: true)
+          hash = Oj.load(json, symbol_keys: true)
           worker = Worker.new(hash)
           return if !worker.valid?
-        rescue JSON::ParserError
+        rescue Oj::ParseError
         end
       end
 
@@ -133,12 +133,12 @@ class Worker
             json = r.get(i)
             next if json.blank?
 
-            hash = JSON.parse(json, symbolize_names: true)
+            hash = Oj.load(json, symbol_keys: true)
             worker = Worker.new(hash)
             next if !worker.valid?
 
             yield worker
-          rescue JSON::ParserError
+          rescue Oj::ParseError
           end
         end
       end

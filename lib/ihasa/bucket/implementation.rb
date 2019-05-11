@@ -1,7 +1,7 @@
 require 'ihasa/lua'
 require 'singleton'
+
 module Ihasa
-  # For redis server whith version >= 3.2
   class Bucket::Implementation
     include Singleton
 

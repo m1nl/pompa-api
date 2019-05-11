@@ -1,8 +1,9 @@
+require 'liquid'
 require 'base64'
 
 module Pompa
   module LiquidExtensions
-    module UrlSafeDigestFilter
+    module UrlsafeDigestFilter
       def urlsafe_digest(input)
           Pompa::Utils.urlsafe_digest(input)
         rescue StandardError => e
@@ -12,4 +13,4 @@ module Pompa
   end
 end
 
-Liquid::Template.register_filter(Pompa::LiquidExtensions::UrlSafeDigestFilter)
+Liquid::Template.register_filter(Pompa::LiquidExtensions::UrlsafeDigestFilter)

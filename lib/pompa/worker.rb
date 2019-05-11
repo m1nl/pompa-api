@@ -1,4 +1,4 @@
-require 'json'
+require 'oj'
 require 'date'
 require 'time'
 require 'redis/queue'
@@ -310,8 +310,8 @@ module Pompa
         message = nil
 
         begin
-          message = JSON.parse(json, symbolize_names: true)
-        rescue JSON::ParserError => e
+          message = Oj.load(json, symbol_keys: true)
+        rescue Oj::ParseError => e
           logger.error("Ignoring invalid message")
           return INVALID
         end

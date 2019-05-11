@@ -1,3 +1,5 @@
 module Redlock
-  VERSION = '0.2.2+mnl1'.freeze
+  module Version
+    VERSION = '1.0.0+mnl1'.freeze
+  end
 end

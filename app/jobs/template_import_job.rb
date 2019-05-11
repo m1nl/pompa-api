@@ -1,5 +1,5 @@
 require 'tmpdir'
-require 'json'
+require 'oj'
 require 'digest'
 
 class TemplateImportJob < ApplicationJob
@@ -61,7 +61,7 @@ class TemplateImportJob < ApplicationJob
               .new("unable to find #{TEMPLATE_FILENAME} in archive") if entry.nil?
 
             json = entry.get_input_stream.read
-            hash = JSON.parse(json).deep_symbolize_keys!
+            hash = Oj.load(json, symbol_keys: true)
 
             template = Template.new(
               hash.slice(*Template.column_names.map(&:to_sym)))
@@ -74,10 +74,10 @@ class TemplateImportJob < ApplicationJob
               .new("unable to find #{GOALS_FILENAME} in archive") if entry.nil?
 
             json = entry.get_input_stream.read
-            hash_array = JSON.parse(json)
+            hash_array = Oj.load(json, symbol_keys: true)
 
             hash_array.each do |g|
-              goal = Goal.new(g.deep_symbolize_keys!.slice(
+              goal = Goal.new(g.slice(
                 *Goal.column_names.map(&:to_sym) - [:template_id]))
               goal.template_id = template.id
               goal.save!
@@ -92,10 +92,10 @@ class TemplateImportJob < ApplicationJob
               .new("unable to find #{RESOURCES_FILENAME} in archive") if entry.nil?
 
             json = entry.get_input_stream.read
-            hash_array = JSON.parse(json)
+            hash_array = Oj.load(json, symbol_keys: true)
 
             hash_array.each do |r|
-              resource = Resource.new(r.deep_symbolize_keys!.slice(
+              resource = Resource.new(r.slice(
                 *Resource.column_names.map(&:to_sym) - [:template_id]))
               resource.template_id = template.id
 
@@ -130,10 +130,10 @@ class TemplateImportJob < ApplicationJob
               .new("unable to find #{ATTACHMENTS_FILENAME} in archive") if entry.nil?
 
             json = entry.get_input_stream.read
-            hash_array = JSON.parse(json)
+            hash_array = Oj.load(json, symbol_keys: true)
 
             hash_array.each do |a|
-              attachment = Attachment.new(a.deep_symbolize_keys!.slice(
+              attachment = Attachment.new(a.slice(
                 *Attachment.column_names.map(&:to_sym) - [:template_id,
                 :resource_id]))
               attachment.template_id = template.id
@@ -151,7 +151,7 @@ class TemplateImportJob < ApplicationJob
         logger.error("Template import error: #{e.class.name}: #{e.message}")
         multi_logger.backtrace(e)
         return result(ERROR, "error reading ZIP archive: #{e.message}")
-      rescue JSON::ParserError => e
+      rescue Oj::ParseError => e
         logger.error("Template import error: #{e.class.name}: #{e.message}")
         multi_logger.backtrace(e)
         return result(ERROR, "unable to parse JSON: #{e.message}")

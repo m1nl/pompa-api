@@ -1,4 +1,4 @@
-require 'json'
+require 'oj'
 
 class Campaign < ApplicationRecord
   include Defaults
@@ -106,10 +106,10 @@ class Campaign < ApplicationRecord
 
             result.each do |j|
               begin
-                hash = JSON.parse(j, symbolize_names: true)
+                hash = Oj.load(j, symbol_keys: true)
                 event = Event.new(hash)
                 events << event
-              rescue JSON::ParserError => e
+              rescue Oj::ParseError => e
               end
             end
 

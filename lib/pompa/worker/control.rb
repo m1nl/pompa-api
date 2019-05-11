@@ -1,4 +1,4 @@
-require 'json'
+require 'oj'
 require 'pompa/redis_connection'
 require 'pompa/worker/generic'
 
@@ -270,8 +270,8 @@ module Pompa
 
             json = response[1]
             begin
-              return JSON.parse(json, symbolize_names: true)
-            rescue JSON::ParserError
+              return Oj.load(json, symbol_keys: true)
+            rescue Oj::ParseError
               return INVALID_RESPONSE
             end
           end

@@ -1,7 +1,8 @@
 # based on standard ActiveSupport JSONGemEncoder, includes escaping of Unicode control characters
+require 'oj'
 
 module Pompa
-  class JSONEncoder
+  class JsonEncoder
     attr_reader :options
 
     def initialize(options = nil)
@@ -87,7 +88,7 @@ module Pompa
 
       # Encode a "jsonified" Ruby data structure using the JSON gem
       def stringify(jsonified)
-        ::JSON.generate(jsonified, quirks_mode: true, max_nesting: false)
+        Oj.dump(jsonified, quirks_mode: true, max_nesting: false)
       end
   end
 end

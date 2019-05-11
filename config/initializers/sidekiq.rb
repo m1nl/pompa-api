@@ -1,4 +1,4 @@
-require 'pompa'
+require 'pompa/redis_connection'
 
 Sidekiq.configure_client do |config|
   config.redis = Pompa::RedisConnection.common_pool

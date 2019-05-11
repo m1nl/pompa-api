@@ -1,5 +1,4 @@
 require 'tmpdir'
-require 'json'
 require 'digest'
 
 class TemplateExportJob < ApplicationJob

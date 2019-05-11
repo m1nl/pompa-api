@@ -1,3 +1,4 @@
+require 'oj'
 require 'mail'
 require 'ihasa'
 require 'securerandom'
@@ -91,8 +92,8 @@ class MailerWorkerJob < WorkerJob
           mark
 
           begin
-            mail = JSON.parse(json, symbolize_names: true)
-          rescue JSON::ParserError => e
+            mail = Oj.load(json, symbol_keys: true)
+          rescue Oj::ParseError => e
             logger.error("Ignoring invalid queued email")
             next
           end

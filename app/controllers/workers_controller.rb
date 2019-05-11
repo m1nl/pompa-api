@@ -1,4 +1,4 @@
-require 'json'
+require 'oj'
 
 class WorkersController < ApplicationController
   include Renderable
@@ -46,7 +46,7 @@ class WorkersController < ApplicationController
 
         return render status: :no_content if json.nil?
 
-        message = JSON.parse(json, symbolize_names: true)
+        message = Oj.load(json, symbol_keys: true)
 
         if message.dig(:result, :status) == Worker::FILE
           r.rpush(reply_queue, json)
@@ -59,7 +59,7 @@ class WorkersController < ApplicationController
           r.rpush(reply_queue, json) if request.method.downcase.to_sym != :get
           return render_worker_response WorkerResponse.wrap(message)
         end
-      rescue JSON::ParserError => e
+      rescue Oj::ParseError => e
         return render status: :no_content
       end
     end
@@ -90,7 +90,7 @@ class WorkersController < ApplicationController
 
         return render status: :no_content if json.nil?
 
-        message = JSON.parse(json, symbolize_names: true)
+        message = Oj.load(json, symbol_keys: true)
 
         if message.dig(:result, :status) != Worker::FILE
           r.rpush(reply_queue, json)
@@ -107,7 +107,7 @@ class WorkersController < ApplicationController
           return send_file(path, :filename => filename) if File.file?(path)
           return render status: :not_found
         end
-      rescue JSON::ParserError => e
+      rescue Oj::ParseError => e
         return render status: :no_content
       end
     end

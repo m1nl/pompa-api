@@ -1,3 +1,4 @@
+require 'liquid'
 require 'base64'
 
 module Pompa
