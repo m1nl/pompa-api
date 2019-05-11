@@ -5,6 +5,8 @@ class WorkersController < ApplicationController
 
   ATTACHMENT = 'attachment'.freeze
 
+  QUANTUM = 1.seconds
+
   before_action :set_worker, only: [:show]
 
   # GET /workers
@@ -27,7 +29,7 @@ class WorkersController < ApplicationController
     timeout = params[:timeout]
 
     if !timeout.is_a?(Integer) || timeout > Worker.expiry_timeout
-      timeout = Worker.expiry_timeout
+      timeout = Worker.queue_timeout
     end
 
     reply_queue = Worker.reply_queue_key_name(params.slice(*[:queue_id]))
@@ -38,7 +40,15 @@ class WorkersController < ApplicationController
         json = r.rpop(reply_queue)
 
         if json.nil? && sync
-          response = r.brpop(reply_queue, :timeout => timeout)
+          start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          response = nil
+
+          loop do
+            response = r.brpop(reply_queue, :timeout => QUANTUM)
+            time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            break if !response.nil? || (time - start) >= timeout
+          end
+
           return render status: :no_content if response.nil?
 
           json = response[1]
@@ -49,14 +59,14 @@ class WorkersController < ApplicationController
         message = Oj.load(json, symbol_keys: true)
 
         if message.dig(:result, :status) == Worker::FILE
-          r.rpush(reply_queue, json)
+          r.lpush(reply_queue, json)
 
           location = Rails.application.routes.url_helpers.url_for(
             :controller => :workers, :action => :files, :only_path => true,
             :queue_id => queue_id, :sync => sync)
           return redirect_to location, status: :see_other
         else
-          r.rpush(reply_queue, json) if request.method.downcase.to_sym != :get
+          r.lpush(reply_queue, json) if request.method.downcase.to_sym != :get
           return render_worker_response WorkerResponse.wrap(message)
         end
       rescue Oj::ParseError => e
@@ -71,7 +81,7 @@ class WorkersController < ApplicationController
     timeout = params[:timeout]
 
     if !timeout.is_a?(Integer) || timeout > Worker.expiry_timeout
-      timeout = Worker.expiry_timeout
+      timeout = Worker.queue_timeout
     end
 
     reply_queue = Worker.reply_queue_key_name(params.slice(*[:queue_id]))
@@ -82,7 +92,15 @@ class WorkersController < ApplicationController
         json = r.rpop(reply_queue)
 
         if json.nil? && sync
-          response = r.brpop(reply_queue, :timeout => timeout)
+          start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          response = nil
+
+          loop do
+            response = r.brpop(reply_queue, :timeout => QUANTUM)
+            time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            break if !response.nil? || (time - start) >= timeout
+          end
+
           return render status: :no_content if response.nil?
 
           json = response[1]
@@ -93,14 +111,14 @@ class WorkersController < ApplicationController
         message = Oj.load(json, symbol_keys: true)
 
         if message.dig(:result, :status) != Worker::FILE
-          r.rpush(reply_queue, json)
+          r.lpush(reply_queue, json)
 
           location = Rails.application.routes.url_helpers.url_for(
             :controller => :workers, :action => :replies, :only_path => true,
             :queue_id => queue_id, :sync => sync)
           return redirect_to location, status: :see_other
         else
-          r.rpush(reply_queue, json) if request.method.downcase.to_sym != :get
+          r.lpush(reply_queue, json) if request.method.downcase.to_sym != :get
 
           path = message.dig(:result, :path)
           filename = message.dig(:result, :filename)

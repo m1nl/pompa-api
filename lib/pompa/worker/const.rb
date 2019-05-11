@@ -28,6 +28,8 @@ module Pompa
 
       PING = { :ping => true }.freeze
 
+      TIMEOUT_QUANTUM = 1.seconds
+
       REDIS_OPTS = [:pool, :redis].freeze
 
       def queue_timeout

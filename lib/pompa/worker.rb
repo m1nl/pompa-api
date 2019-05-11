@@ -276,7 +276,7 @@ module Pompa
             begin
               multi_logger.debug{["Replying with ", Pompa::Utils.truncate(json),
                 " to #{recipient}"]}
-              r.rpush(recipient, json)
+              r.lpush(recipient, json)
             rescue StandardError => e
               logger.error("Replying failed with #{e.class}: #{e.message}")
               multi_logger.backtrace(e)
@@ -290,7 +290,7 @@ module Pompa
               begin
                 multi_logger.debug{["Broadcasting ", Pompa::Utils.truncate(json),
                   " to #{s}"]}
-                r.rpush(s, json)
+                r.lpush(s, json)
               rescue StandardError => e
                 logger.error("Broadcasting failed with #{e.class}: #{e.message}")
                 multi_logger.backtrace(e)

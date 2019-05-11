@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class Redis
   class Queue
     VERSION = '0.0.4+mnl1'.freeze
+    QUANTUM = 1.seconds
 
     def self.version
       "redis-queue version #{VERSION}"
@@ -65,7 +66,17 @@ class Redis
       if non_block
         return @redis.rpoplpush(@queue_name, @process_queue_name)
       else
-        return @redis.brpoplpush(@queue_name, @process_queue_name, :timeout => timeout)
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        result = nil
+
+        loop do
+          result = @redis.brpoplpush(@queue_name, @process_queue_name,
+            :timeout => QUANTUM)
+          time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          break if !result.nil? || (time - start) >= timeout
+        end
+
+        return result
       end
     end
 
@@ -84,8 +95,8 @@ class Redis
     end
 
     def refill
-      while message = @redis.lpop(@process_queue_name)
-        @redis.rpush(@queue_name, message)
+      while message = @redis.rpop(@process_queue_name)
+        @redis.lpush(@queue_name, message)
       end
       true
     end

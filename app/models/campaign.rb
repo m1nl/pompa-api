@@ -83,7 +83,7 @@ class Campaign < ApplicationRecord
           reported_date: Time.current,
         }
 
-        r.lpush(event_queue_key_name(campaign_id), event.to_json)
+        r.rpush(event_queue_key_name(campaign_id), event.to_json)
       end
     end
 

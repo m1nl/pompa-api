@@ -86,7 +86,7 @@ class MailerWorkerJob < WorkerJob
     def tick
       redis.with do |r|
         while message_queue.length == 0 do
-          json = r.lpop(mail_queue_key_name)
+          json = r.rpop(mail_queue_key_name)
           break if json.nil?
 
           mark
@@ -120,7 +120,7 @@ class MailerWorkerJob < WorkerJob
       mail[:message_id] ||= generate_message_id(mail)
       mail[:reply_to] = message[:reply_to]
 
-      redis.with { |r| r.rpush(mail_queue_key_name, mail.to_json) }
+      redis.with { |r| r.lpush(mail_queue_key_name, mail.to_json) }
       multi_logger.debug{["Queued email #{mail[:message_id]}: ", mail]}
       return result(Mailer::QUEUED, mail[:message_id])
     end

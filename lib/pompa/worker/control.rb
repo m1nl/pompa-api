@@ -250,9 +250,9 @@ module Pompa
               .blank?
 
             if head
-              r.lpush(queue_key_name, message.to_json)
-            else
               r.rpush(queue_key_name, message.to_json)
+            else
+              r.lpush(queue_key_name, message.to_json)
             end
 
             ## unlock if locked to prevent deadlock
@@ -261,7 +261,15 @@ module Pompa
             worker_unlock(opts.merge(:redis => r,
               :instance_id => instance_id, :name => name)) if locked
 
-            response = r.blpop(message[:reply_to], :timeout => timeout)
+            start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            response = nil
+
+            loop do
+              response = r.brpop(message[:reply_to],
+                :timeout => TIMEOUT_QUANTUM)
+              time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+              break if !response.nil? || (time - start) >= timeout
+            end
 
             worker_lock(opts.merge(:redis => r,
               :instance_id => instance_id, :name => name)) if locked
@@ -296,9 +304,9 @@ module Pompa
               .blank?
 
             if head
-              r.lpush(queue_key_name, message.to_json)
-            else
               r.rpush(queue_key_name, message.to_json)
+            else
+              r.lpush(queue_key_name, message.to_json)
             end
           end
 
