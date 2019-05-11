@@ -1,5 +1,3 @@
-require 'pompa'
-
 module Renderable
   extend ActiveSupport::Concern
 

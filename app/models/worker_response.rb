@@ -1,5 +1,3 @@
-require 'pompa'
-
 class WorkerResponse
   include ActiveModel::Model
   include ActiveModel::Serialization

@@ -1,5 +1,3 @@
-require 'active_support/concern'
-
 module NullifyBlanks
   extend ActiveSupport::Concern
 

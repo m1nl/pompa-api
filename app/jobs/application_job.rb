@@ -1,5 +1,3 @@
-require 'pompa'
-
 class ApplicationJob < ActiveJob::Base
   around_perform do |_job, block|
     Bullet.profile do

@@ -13,7 +13,7 @@ class ResourcesController < ApplicationController
 
   # GET /resources
   def index
-    @resources = Resource.all
+    @resources = Resource.with_attached_file.all
 
     render_collection @resources
   end

@@ -1,4 +1,3 @@
-require 'active_support/concern'
 require 'liquid'
 
 module LiquidTemplate

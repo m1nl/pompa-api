@@ -1,6 +1,3 @@
-require 'pompa'
-require 'active_support/concern'
-
 module WorkerModel
   extend ActiveSupport::Concern
 

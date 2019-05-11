@@ -1,4 +1,3 @@
-require 'pompa'
 require 'oj'
 
 class Worker
