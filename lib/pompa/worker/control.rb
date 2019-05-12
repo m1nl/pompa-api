@@ -25,7 +25,7 @@ module Pompa
           end
 
           return ping(opts.merge(:name => name, :instance_id => instance_id,
-            :timeout => timeout, :head => true))
+            :timeout => timeout))
         end
       end
 
@@ -48,7 +48,7 @@ module Pompa
           end
 
           return ping(opts.merge(:name => name, :instance_id => instance_id,
-            :timeout => timeout, :head => true))
+            :timeout => timeout))
         end
       end
 
@@ -153,7 +153,7 @@ module Pompa
 
         return message(PING.deep_dup.merge(
           :expires => timeout.seconds.from_now), opts.merge(
-          :timeout => timeout))
+          :timeout => timeout, :head => true))
       end
 
       ### Locking
