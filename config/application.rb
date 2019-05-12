@@ -54,9 +54,20 @@ module PompaApi
     config.middleware.use ActionDispatch::Cookies
 
     # Configuration for trusted proxies
-    config.action_dispatch.trusted_proxies = Rails.configuration.pompa
-      .trusted_proxies.map { |proxy| IPAddr.new(proxy) } if !Rails
-      .configuration.pompa.trusted_proxies.nil?
+    if !Rails.configuration.pompa.trusted_proxies.nil?
+      require 'resolv'
+
+      ips = []
+
+      Rails.configuration.pompa.trusted_proxies.map do |name|
+        ip = IPAddr.new(name) rescue nil
+        ip = Resolv.getaddresses(name).map { |i|
+          IPAddr.new(i) } if ip.nil?
+        ips << ip if !ip.nil?
+      end
+
+      config.action_dispatch.trusted_proxies = ips.flatten.uniq
+    end
 
     # Configure log level
     config.log_level = Rails.configuration.pompa.log_level.to_sym
