@@ -110,7 +110,8 @@ class TemplateImportJob < ApplicationJob
                   resource.file.attach({
                     io: File.open(temp_filename, 'rb'),
                     filename: r.dig(:file, :filename),
-                    content_type: r.dig(:file, :content_type)
+                    content_type: r.dig(:file, :content_type),
+                    identify: false
                   })
                   mark
                 ensure

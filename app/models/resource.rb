@@ -212,7 +212,7 @@ class Resource < ApplicationRecord
           tempfile.rewind
 
           c.file.attach({ io: tempfile, filename: file.blob.filename,
-            content_type: file.blob.content_type })
+            content_type: file.blob.content_type, identify: false })
         ensure
           tempfile.unlink
         end
