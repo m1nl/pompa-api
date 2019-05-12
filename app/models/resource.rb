@@ -1,5 +1,6 @@
 require 'http'
 require 'liquid'
+require 'tempfile'
 
 class Resource < ApplicationRecord
   include Defaults
@@ -203,9 +204,17 @@ class Resource < ApplicationRecord
       c.code = Pompa::Utils.random_code
 
       if type == FILE
-        file.blob.open do |f|
-          c.file.attach({ io: f, filename: file.blob.filename,
+        tempfile = Tempfile.new(RESOURCE)
+        tempfile.binmode
+
+        begin
+          file.blob.download { |f| tempfile.write(f) }
+          tempfile.rewind
+
+          c.file.attach({ io: tempfile, filename: file.blob.filename,
             content_type: file.blob.content_type })
+        ensure
+          tempfile.unlink
         end
       end
     end
@@ -214,14 +223,14 @@ class Resource < ApplicationRecord
   class << self
     def id_by_code(resource_code)
       Pompa::Cache.fetch("resource_#{resource_code}/id") do
-        Resource.where(code: resource_code).pluck(:id).first
+        Resource.where(code: resource_code).pick(:id)
       end
     end
 
     def template_id_by_code(resource_code)
       Pompa::Cache.fetch("resource_#{resource_code}/template_id") do
         Template.joins(:resources)
-          .where(resources: { code: resource_code }).pluck(:id).first
+          .where(resources: { code: resource_code }).pick(:id)
       end
     end
 

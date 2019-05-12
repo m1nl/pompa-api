@@ -85,13 +85,15 @@ class Template < ApplicationRecord
     ActiveRecord::Base.transaction do
       copy.save!
 
-      goals.each { |g| g.dup.tap { |o| o.template_id = copy.id }.save! }
-      resources.each { |r| r.dup.tap { |o| o.template_id = copy.id }.save! }
+      goals
+        .each { |g| g.dup.tap { |o| o.template_id = copy.id }.save! }
+      resources.with_attached_file
+        .each { |r| r.dup.tap { |o| o.template_id = copy.id }.save! }
 
-      attachments.includes(:resource).each do |a|
+      attachments.each do |a|
         a = a.dup.tap { |o| o.template_id = copy.id }
         a.resource_id = copy.resources.where(
-          :name => a.resource.name).pluck(:id).first
+          :name => a.resource.name).pick(:id)
         a.save!
       end
     end
@@ -127,7 +129,7 @@ class Template < ApplicationRecord
               "unable to access resources" if @resources.nil?
 
             resource_id = @resources.where(name: input)
-              .pluck(:id).first
+              .pick(:id)
             raise Liquid::ArgumentError,
               "resource \"#{input}\" not found" if resource_id.nil?
 
@@ -154,7 +156,7 @@ class Template < ApplicationRecord
               "unable to access resources" if @resources.nil?
 
             resource_id = @resources.where(name: input)
-              .pluck(:id).first
+              .pick(:id)
             raise Liquid::ArgumentError,
               "resource \"#{input}\" not found" if resource_id.nil?
 
@@ -174,7 +176,7 @@ class Template < ApplicationRecord
               "unable to access goals" if @goals.nil?
 
             goal_id = @goals.where(name: input)
-              .pluck(:id).first
+              .pick(:id)
             raise Liquid::ArgumentError,
               "goal \"#{input}\" not found" if goal_id.nil?
 
