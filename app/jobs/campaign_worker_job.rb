@@ -206,7 +206,16 @@ class CampaignWorkerJob < WorkerJob
       end
 
       if queued_victims_length != 0
-        logger.debug{"Subscribed for events from victims: " +
+        existing_ids = Victim.where(id: queued_victims).pluck(:id)
+        (queued_victims - existing_ids).each do |v|
+          delete_queued_victim(v)
+          logger.debug{"Unsubscribed for events from non-existent victim: " +
+            "##{v}"}
+        end
+      end
+
+      if queued_victims_length != 0
+        logger.debug{"Currently subscribed for events from victims: " +
           "##{queued_victims.join(', #')}"}
       end
 
