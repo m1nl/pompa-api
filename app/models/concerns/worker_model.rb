@@ -104,8 +104,7 @@ module WorkerModel
 
         current_jid = self
           .where(id: instance_id)
-          .pluck(:jid)
-          .first
+          .pick(:jid)
 
         current_worker = Worker.find_by_id(current_jid)
 
@@ -165,8 +164,7 @@ module WorkerModel
 
           current_jid = self
             .where(id: instance_id)
-            .pluck(:jid)
-            .first
+            .pick(:jid)
 
           current_worker = Worker.find_by_id(current_jid)
 

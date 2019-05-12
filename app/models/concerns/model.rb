@@ -111,11 +111,11 @@ module Model
 
       if !opts[:shallow]
         if !build_model_prepend.empty?
-          ids = Array(where(id: id).limit(1).pluck(*
+          ids = Array(where(id: id).pick(*
             build_model_prepend.map do |m|
               reflect_on_association(m).foreign_key
             end
-          ).first)
+          ))
           return nil if ids.empty?
 
           ids = Hash[build_model_prepend.zip ids]

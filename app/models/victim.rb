@@ -179,7 +179,7 @@ class Victim < ApplicationRecord
   class << self
     def id_by_code(victim_code)
       Pompa::Cache.fetch("victim_#{victim_code}/id") do
-        Victim.where(code: victim_code).pluck(:id).first
+        Victim.where(code: victim_code).pick(:id)
       end
     end
 
@@ -187,14 +187,14 @@ class Victim < ApplicationRecord
       Pompa::Cache.fetch("victim_#{victim_code}/campaign_id") do
         Campaign.joins(scenarios: :victims)
           .where(victims: { code: victim_code },
-            state: [Campaign::STARTED, Campaign::PAUSED]).pluck(:id).first
+            state: [Campaign::STARTED, Campaign::PAUSED]).pick(:id)
       end
     end
 
     def template_id_by_code(victim_code)
       Pompa::Cache.fetch("victim_#{victim_code}/template_id") do
         Template.joins(scenarios: :victims)
-          .where(victims: { code: victim_code }).pluck(:id).first
+          .where(victims: { code: victim_code }).pick(:id)
       end
     end
 

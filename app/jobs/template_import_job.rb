@@ -138,7 +138,7 @@ class TemplateImportJob < ApplicationJob
                 :resource_id]))
               attachment.template_id = template.id
               attachment.resource_id = template.resources.where(
-                :name => a[:resource_name]).pluck(:id).first
+                :name => a[:resource_name]).pick(:id)
               attachment.save!
             rescue StandardError => e
               logger.error("Template import error: #{e.class.name}: #{e.message}")

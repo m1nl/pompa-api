@@ -26,13 +26,13 @@ class Goal < ApplicationRecord
   class << self
     def id_by_code(goal_code)
       Pompa::Cache.fetch("goal_#{goal_code}/id") do
-        Goal.where(code: goal_code).pluck(:id).first
+        Goal.where(code: goal_code).pick(:id)
       end
     end
 
     def template_id_by_code(goal_code)
       Pompa::Cache.fetch("goal_#{goal_code}/template_id") do
-        Goal.where(code: goal_code).pluck(:template_id).first
+        Goal.where(code: goal_code).pick(:template_id)
       end
     end
   end

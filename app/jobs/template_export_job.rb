@@ -112,7 +112,7 @@ class TemplateExportJob < ApplicationJob
               .except!(*[:id, :template_id, :resource_id, :links])
 
             attachment[:resource_name] = Resource.where(
-              :id => a.resource_id).pluck(:name)[0]
+              :id => a.resource_id).pick(:name)
 
             attachments << attachment
           end
