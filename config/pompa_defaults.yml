@@ -10,7 +10,6 @@ default: &default
   batch_size: 1000
   url: /api
   origins: ""
-  trust_uploads: true
   trusted_proxies:
     - "127.0.0.1"
     - "::1"

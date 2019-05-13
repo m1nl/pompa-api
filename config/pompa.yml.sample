@@ -13,7 +13,6 @@ default: &default
   batch_size: 1000 # batch size when doing various bulk SQL inserts (i.e. importing targets from CSV file)
   url: /api # relative URL for application API - public endpoint is exposed under /api/public by default
   origins: "" # allowed origins for Cross-Origin Resource Sharing (CORS)
-  trust_uploads: true # whether to check if mime-type of a uploaded resource matches the extension
   trusted_proxies: # trusted IPs of proxies in order to handle X-Forwarded-For header correctly
     - "127.0.0.1"
     - "::1"
@@ -48,7 +47,7 @@ default: &default
     retry_threshold: 5 # how many times a worker should try to queue an email before going into error state
     expose_header: "X-Victim-Code" # header name inside email to include the victim unique ID (victim code)
   template: # parameters / defaults for a template
-    base_url: "http://localhost:3000/api/public" # default base URL for a template (instance default
+    base_url: "http://localhost:3000/api/public" # default base URL for a template (instance default value)
   report: # parameters for event reporting subsystem inside the public endpoint
     cookie_name: "pompa" # name of a persistent cookie set by public endpoint handler for each victim
   redis:
