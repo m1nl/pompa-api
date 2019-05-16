@@ -26,7 +26,7 @@ module LiquidTemplate
           ( !self.respond_to?(changed_name) || !self.send(changed_name))
 
         liquid_templates[attribute] ||=
-          Pompa::Cache.fetch("#{cache_key}/#{attribute}_template",
+          Pompa::Cache.fetch("#{cache_key_with_version}/#{attribute}_template",
             :condition => perform_caching) do
             num = self.method(attribute).arity
             args = [model, opts]

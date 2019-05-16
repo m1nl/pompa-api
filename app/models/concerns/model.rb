@@ -21,12 +21,12 @@ module Model
       end
     end
 
-    cache_path = "#{cache_key}"
+    cache_path = "#{cache_key_with_version}"
     cache_path =
       "#{model[CACHE_PATH]}/#{cache_path}" if !model[CACHE_PATH].blank?
 
     model[name] = {}
-    model[name][CACHE_KEY] = cache_key
+    model[name][CACHE_KEY] = cache_key_with_version
     model[name][TIMESTAMP] = updated_at
 
     serialize_model!(name, model, opts)
@@ -71,7 +71,7 @@ module Model
           opts[:model] = find_by_id(id)
           return nil if opts[:model].nil?
 
-          cache_key = opts[:model].cache_key
+          cache_key = opts[:model].cache_key_with_version
           r.setex(cached_key_name(id), @cache_expire, cache_key)
           return cache_key
         end
@@ -79,7 +79,7 @@ module Model
         opts[:model] ||= find_by_id(id)
         return nil if opts[:model].nil?
 
-        opts[:model].cache_key
+        opts[:model].cache_key_with_version
       end
     end
 
@@ -140,7 +140,7 @@ module Model
         return nil if opts[:model].nil?
 
         model[name] = {}
-        model[name][CACHE_KEY] = opts[:model].cache_key
+        model[name][CACHE_KEY] = opts[:model].cache_key_with_version
         model[name][TIMESTAMP] = opts[:model].updated_at
 
         opts[:model].serialize_model!(name, model, opts)
