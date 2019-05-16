@@ -52,9 +52,6 @@ class ResourcesController < ApplicationController
   def download
     return head :forbidden if @resource.dynamic_url?
 
-    return unless stale?(etag: @resource,
-        last_modified: @resource.updated_at, public: true)
-
     filename = ""
 
     if @resource.type == Resource::FILE
