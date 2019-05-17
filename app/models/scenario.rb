@@ -43,16 +43,23 @@ class Scenario < ApplicationRecord
         .new('unable to synchronize group after campaign finishes')
     end
 
-    victims.where(state: Victim::PENDING).delete_all
-    return ids if group.nil?
-
     ActiveRecord::Base.transaction do
+      Victim
+        .where({ :scenario_id => id, :state => Victim::PENDING })
+        .delete_all
+      return ids if group.nil?
+
+      targets = group.targets
+
       loop do
         victims = []
-        group.targets
-          .where.not(id: Victim.select(:target_id).where(scenario_id: self.id)
-            .where.not(target_id: nil))
-          .take(batch_size).each do |t|
+
+        targets
+          .left_joins(:victim)
+          .where(:victims => { :target_id => nil } )
+          .order(:id => :asc)
+          .take(batch_size)
+          .each do |t|
           victim = Victim.new(
             first_name: t.first_name,
             last_name: t.last_name,
@@ -63,6 +70,7 @@ class Scenario < ApplicationRecord
             scenario: self,
             target: t,
           )
+
           victims << victim
         end
 
