@@ -55,8 +55,10 @@ class Scenario < ApplicationRecord
         victims = []
 
         targets
-          .left_joins(:victim)
-          .where(:victims => { :target_id => nil } )
+          .where.not({ :id =>
+            Victim
+              .where({ :scenario_id => id })
+              .select(:target_id) })
           .order(:id => :asc)
           .take(batch_size)
           .each do |t|

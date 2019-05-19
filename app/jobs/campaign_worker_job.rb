@@ -47,10 +47,12 @@ class CampaignWorkerJob < WorkerJob
             model.scenarios.each do |s|
 
               Victim.uncached do
-                Victim.pending
+                Victim
+                  .pending
                   .where(scenario_id: s.id)
                   .order(:id)
-                  .take(victim_batch_size).each do |v|
+                  .take(victim_batch_size)
+                  .each do |v|
 
                   v.with_worker_lock(:redis => r) do
                     logger.debug("Triggering email and subscribing victim ##{v.id}")
