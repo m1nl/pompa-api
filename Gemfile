@@ -27,6 +27,7 @@ gem 'colorize'
 gem 'concurrent-ruby'
 gem 'groupdate'
 gem 'oj'
+gem 'rbnacl'
 
 gem 'paperclip' if ENV['ENABLE_PAPERCLIP']
 

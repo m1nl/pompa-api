@@ -70,29 +70,18 @@ module Pompa
       def encrypt(input, compress = false)
         input = Zlib::Deflate.new.deflate(input, Zlib::FINISH) if compress
 
-        cipher = OpenSSL::Cipher.new(CIPHER)
-        iv = cipher.random_iv
+        box = RbNaCl::SimpleBox::from_secret_key(encryption_key)
 
-        cipher.encrypt
-        cipher.iv = iv
-        cipher.key = encryption_key
-
-        encrypted = iv + cipher.update(input) + cipher.final
-        Base64.urlsafe_encode64(encrypted).gsub('=', '')
+        encrypted = box.encrypt(input)
+        return Base64.urlsafe_encode64(encrypted).gsub('=', '')
       end
 
       def decrypt(input, decompress = false)
         decoded = Base64.decode64(input.tr('-_', '+/'))
 
-        cipher = OpenSSL::Cipher.new(CIPHER)
-        iv = decoded[0..cipher.iv_len - 1]
-        encrypted = decoded[cipher.iv_len..-1]
+        box = RbNaCl::SimpleBox::from_secret_key(encryption_key)
 
-        cipher.decrypt
-        cipher.iv = iv
-        cipher.key = encryption_key
-
-        plaintext = cipher.update(encrypted) + cipher.final
+        plaintext = box.decrypt(decoded)
         decompress ? Zlib::Inflate.new.inflate(plaintext) : plaintext
       end
 
