@@ -8,7 +8,6 @@ module Pompa
   class Utils
     class << self
       DEFAULT_TRUNCATE = 50
-      KEY_LEN = 32
 
       def random_code
         SecureRandom.urlsafe_base64(code_length)
@@ -88,7 +87,7 @@ module Pompa
       private
         def encryption_key
           @encryption_key ||= Rails.application.key_generator.generate_key('',
-            KEY_LEN)
+            RbNaCl::SecretBox.key_bytes)
         end
     end
   end
