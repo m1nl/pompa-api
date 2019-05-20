@@ -2,7 +2,7 @@ require 'securerandom'
 require 'digest'
 require 'base64'
 require 'zlib'
-require 'openssl'
+require 'rbnacl'
 
 module Pompa
   class Utils
