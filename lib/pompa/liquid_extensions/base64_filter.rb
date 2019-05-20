@@ -5,8 +5,11 @@ module Pompa
   module LiquidExtensions
     module Base64Filter
       def base64_encode(input, urlsafe = false)
-          Base64.public_send(
-            urlsafe ? :urlsafe_encode64 : :strict_encode64, input).gsub('=','')
+          if urlsafe
+            Base64.urlsafe_encode64(input).gsub('=', '')
+          else
+            Base64.strict_encode64(input)
+          end
         rescue StandardError => e
           raise Liquid::ArgumentError.new(e.message)
       end
