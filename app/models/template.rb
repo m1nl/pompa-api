@@ -146,6 +146,22 @@ class Template < ApplicationRecord
             end
           end
 
+          define_method :render do |input|
+            @template ||= template
+            @model ||= model
+            @opts ||= opts
+
+            @resources ||= @template.resources
+            raise Liquid::ArgumentError,
+              "unable to access resources" if @resources.nil?
+
+            resource = @resources.where(name: input).first
+            raise Liquid::ArgumentError,
+              "resource \"#{input}\" not found" if resource.nil?
+
+            return resource.render(@model, @opts)
+          end
+
           define_method :embed do |input|
             @template ||= template
             @model ||= model

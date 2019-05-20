@@ -85,7 +85,7 @@ class Resource < ApplicationRecord
       content_rendered = content_template.render!(full_model,
         template.liquid_flags(full_model, opts))
 
-      content_call = lambda { yield content_rendered }
+      content_call = lambda { |&block| block.call(content_rendered) }
     else
       content_call = lambda { |&block| content(full_model, opts, &block) }
     end
