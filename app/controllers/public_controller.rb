@@ -145,8 +145,7 @@ class PublicController < ApplicationController
     return head :not_found if resource.nil?
 
     filename = params[:filename] || params[:f]
-    filename = Pompa::Utils.sanitize_filename(
-      Pompa::Utils.decrypt(filename, false)) if !filename.blank?
+    filename = Pompa::Utils.decrypt(filename, false) if !filename.blank?
 
     model = {}
 
