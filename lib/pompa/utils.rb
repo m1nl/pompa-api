@@ -8,7 +8,7 @@ module Pompa
   class Utils
     class << self
       DEFAULT_TRUNCATE = 50
-      CIPHER = 'chacha20'.freeze
+      KEY_LEN = 32
 
       def random_code
         SecureRandom.urlsafe_base64(code_length)
@@ -87,13 +87,8 @@ module Pompa
 
       private
         def encryption_key
-          return @encryption_key unless @encryption_key.nil?
-
-          cipher = OpenSSL::Cipher.new(CIPHER)
-          cipher.encrypt
-
-          @encryption_key = Rails.application.key_generator.generate_key('',
-            cipher.key_len)
+          @encryption_key ||= Rails.application.key_generator.generate_key('',
+            KEY_LEN)
         end
     end
   end
