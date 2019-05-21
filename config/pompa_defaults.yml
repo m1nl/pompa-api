@@ -2,7 +2,9 @@ redis_default: &redis_default
   driver: hiredis
   pool_size: 15
   url: "unix:///var/run/redis/redis-server.sock"
-  db: 0
+  db:
+    global: 0
+    cache: 10
 
 default: &default
   log_level: "info"
@@ -57,7 +59,9 @@ production:
   <<: *default
   redis:
     <<: *redis_default
-    db: 1
+    db:
+      global: 1
+      cache: 11
     pool_size: 25
 
 development:

@@ -1,6 +1,6 @@
-require "redis"
-require "redlock"
-require "connection_pool"
+require 'redis'
+require 'redlock'
+require 'connection_pool'
 
 module Pompa
   class RedisConnection
@@ -10,7 +10,7 @@ module Pompa
       def pool(opts = {})
         opts[:size] ||= pool_size
 
-        ConnectionPool.new(size: opts[:size], &redis_connection)
+        ConnectionPool.new(size: opts[:size]) { Redis.new(config(opts)) }
       end
 
       def common_pool(opts = {})
@@ -96,26 +96,31 @@ module Pompa
       end
 
       def get(opts = {})
-        redis_connection.call
+        Redis.new(config(opts))
       end
 
-      def config
-        return @config if !@config.nil?
+      def config(opts = {})
+        @config ||= {}
 
-        @config = Rails.configuration.pompa.redis.to_h.deep_dup
-        @config = @config.symbolize_keys!
+        db = opts.delete(:db) || :global
+        db = db.to_sym
 
-        symbols = @config.extract!(*SYMBOLIZE_VALUES_FOR)
+        return @config[db] if !@config[db].nil?
+
+        hash = Rails.configuration.pompa.redis.dup
+
+        db_config = hash.delete(:db).to_h.symbolize_keys!
+        config = hash.to_h.symbolize_keys!
+
+        config[:db] = db_config[db]
+
+        symbol_values = config.extract!(*SYMBOLIZE_VALUES_FOR)
           .transform_values!(&:to_sym)
 
-        @config.merge!(symbols)
+        @config[db] = config.merge(symbol_values)
       end
 
       private
-        def redis_connection
-          @redis_connection ||= proc { Redis.new(config) }
-        end
-
         def redis_common_pool
           @redis_common_pool ||= pool
         end
@@ -124,8 +129,9 @@ module Pompa
           @pool_size ||= Rails.configuration.pompa.redis.pool_size
         end
 
-        def lock_manager
-          @lock_manager ||= Redlock::Client.new([redis_connection.call],
+        def lock_manager(opts = {})
+          @lock_manager ||= Redlock::Client.new(
+            [Redis.new(config(opts))],
             :retry_count => retry_count,
             :retry_delay => retry_delay.in_milliseconds)
         end
