@@ -36,41 +36,45 @@ class WorkersController < ApplicationController
     message = nil
 
     Pompa::RedisConnection.redis do |r|
+      json = r.rpop(reply_queue)
+
+      if json.nil? && sync
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        response = nil
+
+        loop do
+          response = r.brpop(reply_queue, :timeout => QUANTUM)
+          time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          break if !response.nil? || (time - start) >= timeout
+        end
+
+        return render status: :no_content if response.nil?
+
+        json = response[1]
+      end
+
+      return render status: :no_content if json.nil?
+
+      message = nil
+
       begin
-        json = r.rpop(reply_queue)
-
-        if json.nil? && sync
-          start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          response = nil
-
-          loop do
-            response = r.brpop(reply_queue, :timeout => QUANTUM)
-            time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-            break if !response.nil? || (time - start) >= timeout
-          end
-
-          return render status: :no_content if response.nil?
-
-          json = response[1]
-        end
-
-        return render status: :no_content if json.nil?
-
         message = Oj.load(json, symbol_keys: true)
-
-        if message.dig(:result, :status) == Worker::FILE
-          r.lpush(reply_queue, json)
-
-          location = Rails.application.routes.url_helpers.url_for(
-            :controller => :workers, :action => :files, :only_path => true,
-            :queue_id => queue_id, :sync => sync)
-          return redirect_to location, status: :see_other
-        else
-          r.lpush(reply_queue, json) if request.method.downcase.to_sym != :get
-          return render_worker_response WorkerResponse.wrap(message)
-        end
       rescue Oj::ParseError => e
         return render status: :no_content
+      end
+
+      return render status: :no_content if message.nil?
+
+      if message.dig(:result, :status) == Worker::FILE
+        r.lpush(reply_queue, json)
+
+        location = Rails.application.routes.url_helpers.url_for(
+          :controller => :workers, :action => :files, :only_path => true,
+          :queue_id => queue_id, :sync => sync)
+        return redirect_to location, status: :see_other
+      else
+        r.lpush(reply_queue, json) if request.method.downcase.to_sym != :get
+        return render_worker_response WorkerResponse.wrap(message)
       end
     end
   end
@@ -88,45 +92,49 @@ class WorkersController < ApplicationController
     message = nil
 
     Pompa::RedisConnection.redis do |r|
+      json = r.rpop(reply_queue)
+
+      if json.nil? && sync
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        response = nil
+
+        loop do
+          response = r.brpop(reply_queue, :timeout => QUANTUM)
+          time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          break if !response.nil? || (time - start) >= timeout
+        end
+
+        return render status: :no_content if response.nil?
+
+        json = response[1]
+      end
+
+      return render status: :no_content if json.nil?
+
+      message = nil
+
       begin
-        json = r.rpop(reply_queue)
-
-        if json.nil? && sync
-          start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          response = nil
-
-          loop do
-            response = r.brpop(reply_queue, :timeout => QUANTUM)
-            time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-            break if !response.nil? || (time - start) >= timeout
-          end
-
-          return render status: :no_content if response.nil?
-
-          json = response[1]
-        end
-
-        return render status: :no_content if json.nil?
-
         message = Oj.load(json, symbol_keys: true)
-
-        if message.dig(:result, :status) != Worker::FILE
-          r.lpush(reply_queue, json)
-
-          location = Rails.application.routes.url_helpers.url_for(
-            :controller => :workers, :action => :replies, :only_path => true,
-            :queue_id => queue_id, :sync => sync)
-          return redirect_to location, status: :see_other
-        else
-          r.lpush(reply_queue, json) if request.method.downcase.to_sym != :get
-
-          path = message.dig(:result, :path)
-          filename = message.dig(:result, :filename)
-          return send_file(path, :filename => filename) if File.file?(path)
-          return render status: :not_found
-        end
       rescue Oj::ParseError => e
         return render status: :no_content
+      end
+
+      return render status: :no_content if message.nil?
+
+      if message.dig(:result, :status) != Worker::FILE
+        r.lpush(reply_queue, json)
+
+        location = Rails.application.routes.url_helpers.url_for(
+          :controller => :workers, :action => :replies, :only_path => true,
+          :queue_id => queue_id, :sync => sync)
+        return redirect_to location, status: :see_other
+      else
+        r.lpush(reply_queue, json) if request.method.downcase.to_sym != :get
+
+        path = message.dig(:result, :path)
+        filename = message.dig(:result, :filename)
+        return send_file(path, :filename => filename) if File.file?(path)
+        return render status: :not_found
       end
     end
   end
