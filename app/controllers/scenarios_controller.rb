@@ -3,8 +3,6 @@ class ScenariosController < ApplicationController
 
   rescue_from Scenario::InvalidState, :with => :scenario_invalid_state
 
-  DEFAULT_DISPOSITION = 'attachment; filename="%s"'.freeze
-
   CSV_CONTENT_TYPE = 'text/csv; charset=UTF-8'.freeze
   CSV_EXTENSION = '.csv'.freeze
 
@@ -57,7 +55,7 @@ class ScenariosController < ApplicationController
 
     response.headers[CONTENT_TYPE_HEADER] = CSV_CONTENT_TYPE
     response.headers[CONTENT_DISPOSITION_HEADER] =
-      DEFAULT_DISPOSITION % filename
+      Pompa::Utils.content_disposition(filename)
     response.headers[LAST_MODIFIED_HEADER] = Time.current.httpdate
 
     self.status = :ok

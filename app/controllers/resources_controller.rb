@@ -3,8 +3,6 @@ require 'rack/mime'
 class ResourcesController < ApplicationController
   include Renderable
 
-  DEFAULT_DISPOSITION = 'attachment; filename="%s"'.freeze
-
   CONTENT_TYPE_HEADER = 'Content-Type'.freeze
   CONTENT_DISPOSITION_HEADER = 'Content-Disposition'.freeze
   LAST_MODIFIED_HEADER = 'Last-Modified'.freeze
@@ -64,7 +62,7 @@ class ResourcesController < ApplicationController
 
     response.headers[CONTENT_TYPE_HEADER] = @resource.real_content_type
     response.headers[CONTENT_DISPOSITION_HEADER] =
-      DEFAULT_DISPOSITION % filename
+      Pompa::Utils.content_disposition(filename)
     response.headers[LAST_MODIFIED_HEADER] ||= Time.current.httpdate
 
     self.status = :ok

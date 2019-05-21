@@ -22,8 +22,6 @@ class PublicController < ApplicationController
   JPG_FORMAT = :jpg
   GIF_FORMAT = :gif
 
-  DEFAULT_DISPOSITION = 'attachment; filename="%s"'.freeze
-
   ACCEPT_HEADER = 'Accept'.freeze
   CONTENT_TYPE_HEADER = 'Content-Type'.freeze
   LAST_MODIFIED_HEADER = 'Last-Modified'.freeze
@@ -80,7 +78,8 @@ class PublicController < ApplicationController
     return head :not_found if campaign_id.nil?
 
     location = params[:location] || params[:l]
-    location = Pompa::Utils.decrypt(location, true) if !location.blank?
+    location = Pompa::Utils.decrypt(location, true)
+      .force_encoding(Encoding::UTF_8) if !location.blank?
 
     @cookie_name ||= Rails.configuration.pompa.report.cookie_name
     cookies.permanent.signed[@cookie_name] ||= Pompa::Utils.random_code
@@ -135,7 +134,8 @@ class PublicController < ApplicationController
         Resource.cached_key(resource_id)
       )
 
-      safe_params = params.permit(:resource, :r, :victim, :v, :timestamp, :t)
+      safe_params = params.permit(:resource, :r, :victim, :v, :timestamp, :t,
+        :f, :filename)
       return redirect_to(url_for(safe_params
         .except(:timestamp, :t).merge(t: cached_key_digest, only_path: true)),
         status: :moved_permanently) if timestamp != cached_key_digest
@@ -145,7 +145,8 @@ class PublicController < ApplicationController
     return head :not_found if resource.nil?
 
     filename = params[:filename] || params[:f]
-    filename = Pompa::Utils.decrypt(filename, false) if !filename.blank?
+    filename = Pompa::Utils.decrypt(filename, false)
+      .force_encoding(Encoding::UTF_8) if !filename.blank?
 
     model = {}
 
@@ -180,7 +181,7 @@ class PublicController < ApplicationController
     response.headers[CONTENT_TYPE_HEADER] = model.dig(RESOURCE,
       CONTENT_TYPE)
     response.headers[CONTENT_DISPOSITION_HEADER] =
-      DEFAULT_DISPOSITION % filename if !filename.blank?
+      Pompa::Utils.content_disposition(filename) if !filename.blank?
     response.headers[LAST_MODIFIED_HEADER] ||= Time.current.httpdate
 
     self.status = :ok

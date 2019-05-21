@@ -3,6 +3,8 @@ require 'digest'
 require 'base64'
 require 'zlib'
 require 'rbnacl'
+require 'i18n'
+require 'uri'
 
 module Pompa
   class Utils
@@ -64,6 +66,20 @@ module Pompa
           filename.gsub!(bad_char, '_')
         end
         filename
+      end
+
+      def content_disposition(filename)
+         transliterated_filename = I18n.transliterate(filename)
+         sanitized_filename = sanitize_filename(transliterated_filename)
+
+         result = "attachment; filename=\"#{sanitized_filename}\""
+
+         if !filename.ascii_only?
+           encoded_filename = URI.encode(filename.encode(Encoding::UTF_8))
+           result += "; filename*=UTF-8''#{encoded_filename}"
+         end
+
+         return result
       end
 
       def encrypt(input, compress = false)
