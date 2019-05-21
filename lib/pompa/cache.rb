@@ -1,14 +1,13 @@
 module Pompa
   class Cache
     class << self
-      def exist?(name, opts = {})
-        Rails.cache.exist?(name, opts)
+      def exist?(key, opts = {})
+        Rails.cache.exist?(key, opts)
       end
 
       def fetch(key, opts = {})
         if enabled? && (opts[:condition].nil? || !!opts[:condition])
-          Rails.cache.fetch(key, opts.merge(expires_in: expires_in)) {
-            yield }
+          Rails.cache.fetch(key, opts.merge(expires_in: expires_in)) { yield }
         else
           yield
         end
