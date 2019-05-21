@@ -25,8 +25,10 @@ class Scenario < ApplicationRecord
   validate :campaign_check
 
   after_commit :resync_campaign
-  after_commit :synchronize_group, on: [:create, :update],
-    if: :saved_change_to_group_id?
+
+  after_save_commit :clear_cached_values, if: Proc.new { |s|
+    s.saved_change_to_template_id? || s.saved_change_to_campaign_id? }
+  after_save_commit :synchronize_group, if: :saved_change_to_group_id?
 
   build_model_append :campaign, :group, :template
 
@@ -84,6 +86,16 @@ class Scenario < ApplicationRecord
     campaign.ping if !campaign.nil?
 
     return ids
+  end
+
+  def clear_cached_values
+    Victim
+      .where({ scenario_id: id })
+      .in_batches do |victims|
+        victims
+          .pluck(:code)
+          .each { |c| Victim.clear_cached_values(c) }
+      end
   end
 
   def resync_campaign
