@@ -14,6 +14,7 @@ You will need the following things properly installed on your computer:
 * [Bundler](https://bundler.io/)
 * [PostgreSQL](https://www.postgresql.org/) including citext, trgm and tablefunc extensions
 * [Redis](https://redis.io/)
+* [libsodium](https://download.libsodium.org/doc/)
 
 ## Installation
 
