@@ -42,4 +42,11 @@ namespace :pompa do
       ActiveRecord::Migration.remove_column(:resources, c)
     end
   end
+
+  desc "Clear cache"
+  task :clear_cache => :environment do
+    Rails.eager_load!
+
+    Rails.cache.clear
+  end 
 end
