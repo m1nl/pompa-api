@@ -12,6 +12,8 @@ class Goal < ApplicationRecord
 
   build_model_prepend :template
 
+  after_commit :clear_cached_values
+
   def serialize_model!(name, model, opts)
     model[name].merge!(
       GoalSerializer.new(self).serializable_hash(:include => [])
@@ -21,6 +23,10 @@ class Goal < ApplicationRecord
 
   def dup
     super.tap { |c| c.code = Pompa::Utils.random_code }
+  end
+
+  def clear_cached_values
+    self.class.clear_cached_values(code)
   end
 
   class << self
@@ -34,6 +40,11 @@ class Goal < ApplicationRecord
       Pompa::Cache.fetch("goal_#{goal_code}/template_id") do
         Goal.where(code: goal_code).pick(:template_id)
       end
+    end
+
+    def clear_cached_values(goal_code)
+      Pompa::Cache.delete("goal_#{goal_code}/id")
+      Pompa::Cache.delete("goal_#{goal_code}/template_id")
     end
   end
 end

@@ -35,6 +35,8 @@ class Resource < ApplicationRecord
 
   build_model_prepend :template
 
+  after_commit :clear_cached_values
+
   liquid_template :url
   liquid_template :content, :readonly => true, :validate => false,
     :cache_condition => -> { type != URL || !dynamic_url? }
@@ -220,6 +222,10 @@ class Resource < ApplicationRecord
     end
   end
 
+  def clear_cached_values
+    self.class.clear_cached_values(code)
+  end
+
   class << self
     def id_by_code(resource_code)
       Pompa::Cache.fetch("resource_#{resource_code}/id") do
@@ -229,9 +235,13 @@ class Resource < ApplicationRecord
 
     def template_id_by_code(resource_code)
       Pompa::Cache.fetch("resource_#{resource_code}/template_id") do
-        Template.joins(:resources)
-          .where(resources: { code: resource_code }).pick(:id)
+        Resource.where(code: resource_code).pick(:template_id)
       end
+    end
+
+    def clear_cached_values(resource_code)
+      Pompa::Cache.delete("resource_#{resource_code}/id")
+      Pompa::Cache.delete("resource_#{resource_code}/template_id")
     end
 
     def register_transform(clazz)

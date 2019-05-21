@@ -69,6 +69,7 @@ class Victim < ApplicationRecord
 
   after_initialize :state_order
   before_validation :state_order
+  after_commit :clear_cached_values
 
   def state_order
     self[:state_order] = STATE_ORDER[state]
@@ -176,6 +177,10 @@ class Victim < ApplicationRecord
     )
   end
 
+  def clear_cached_values
+    self.class.clear_cached_values(code)
+  end
+
   class << self
     def id_by_code(victim_code)
       Pompa::Cache.fetch("victim_#{victim_code}/id") do
@@ -196,6 +201,12 @@ class Victim < ApplicationRecord
         Template.joins(scenarios: :victims)
           .where(victims: { code: victim_code }).pick(:id)
       end
+    end
+
+    def clear_cached_values(victim_code)
+      Pompa::Cache.delete("victim_#{victim_code}/id")
+      Pompa::Cache.delete("victim_#{victim_code}/campaign_id")
+      Pompa::Cache.delete("victim_#{victim_code}/template_id")
     end
 
     def summary_header

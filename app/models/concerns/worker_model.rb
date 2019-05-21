@@ -166,6 +166,8 @@ module WorkerModel
             .where(id: instance_id)
             .pick(:jid)
 
+          return false if current_jid.blank?
+
           current_worker = Worker.find_by_id(current_jid)
 
           !current_worker.nil? && current_worker.valid? &&
