@@ -6,7 +6,8 @@ class Goal < ApplicationRecord
   belongs_to :template, required: true
   has_many :goal
 
-  validates :name, :score, :code, presence: true
+  validates :name, :code, presence: true
+  validates :score, numericality: { only_integer: true }
 
   default :code, proc { Pompa::Utils.random_code }
 

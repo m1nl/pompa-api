@@ -6,7 +6,8 @@ class Mailer < ApplicationRecord
   QUEUED = 'queued'.freeze
   SENT = 'sent'.freeze
 
-  validates :name, :host, :port, presence: true
+  validates :name, :host, presence: true
+  validates :port, numericality: { only_integer: true, greater_than: 0 }
   validates :sender_email,
     format: { with: /@/, message: 'provide a valid email' }, allow_blank: true
 
