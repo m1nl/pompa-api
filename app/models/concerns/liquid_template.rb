@@ -5,6 +5,7 @@ module LiquidTemplate
 
   included do
     after_save :reset_liquid_templates
+    after_save :clear_liquid_templates_cache
   end
 
   def reload(opts = nil)
@@ -14,28 +15,34 @@ module LiquidTemplate
 
   class_methods do
     def liquid_template(attribute, opts = {})
+      liquid_template_attributes.push(attribute)
+
       define_method "#{attribute}_template" do |model = {}, opts = {}|
         cache_condition = self.class
           .liquid_templates_cache_conditions[attribute]
         defaults = self.class
           .liquid_templates_defaults[attribute]
 
-        changed_name = "#{attribute}_changed?"
+        changed = "#{attribute}_changed?"
         perform_caching =
           ( cache_condition.nil? || self.instance_exec(&cache_condition) ) &&
-          ( !self.respond_to?(changed_name) || !self.send(changed_name))
+          ( !self.respond_to?(changed) || !self.send(changed) )
 
         liquid_templates[attribute] ||=
-          Pompa::Cache.fetch("#{cache_key_with_version}/#{attribute}_template",
+          Pompa::Cache.fetch(liquid_template_cache_key(attribute),
             :condition => perform_caching) do
             num = self.method(attribute).arity
+
             args = [model, opts]
             args = args.first(num) if num >= 0
+
             template = self.send(attribute, *args)
+
             if template.blank? && !defaults.nil?
               template = defaults.respond_to?(:call) ? self
                 .instance_exec(&defaults) : defaults
             end
+
             Liquid::Template.parse(template)
           end
       end
@@ -58,6 +65,10 @@ module LiquidTemplate
       if !opts[:cache_condition].nil?
         liquid_templates_cache_conditions[attribute] = opts[:cache_condition]
       end
+    end
+
+    def liquid_template_attributes
+      @liquid_template_attributes ||= []
     end
 
     def liquid_templates_defaults
@@ -86,5 +97,17 @@ module LiquidTemplate
 
     def reset_liquid_templates
       @liquid_templates = nil
+    end
+
+    def clear_liquid_templates_cache
+      self.class.liquid_template_attributes.each do |a|
+        Pompa::Cache.delete(liquid_template_cache_key(a))
+      end
+    end
+
+    def liquid_template_cache_key(attribute)
+      return nil if !persisted?
+
+      "#{cache_key_with_version}/#{attribute}_template"
     end
 end
