@@ -1,6 +1,6 @@
 redis_default: &redis_default
   driver: hiredis
-  pool_size: 15
+  pool_size: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   url: "unix:///var/run/redis/redis-server.sock"
   db:
     global: 0
@@ -62,7 +62,6 @@ production:
     db:
       global: 1
       cache: 11
-    pool_size: 25
 
 development:
   <<: *default
