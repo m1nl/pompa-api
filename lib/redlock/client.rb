@@ -148,7 +148,7 @@ module Redlock
         recover_from_script_flush do
           @redis.evalsha @lock_script_sha, keys: [resource], argv: [val, ttl, allow_new_lock]
         end
-      rescue Redis::CannotConnectError
+      rescue Redis::BaseConnectionError
         false
       end
 
@@ -156,7 +156,7 @@ module Redlock
         recover_from_script_flush do
           @redis.evalsha @unlock_script_sha, keys: [resource], argv: [val]
         end
-      rescue
+      rescue StandardError
         # Nothing to do, unlocking is just a best-effort attempt.
       end
 
@@ -164,7 +164,7 @@ module Redlock
         recover_from_script_flush do
           @redis.evalsha @validity_script_sha, keys: [resource], argv: [val]
         end
-      rescue Redis::CannotConnectError
+      rescue Redis::BaseConnectionError
         0
       end
 
