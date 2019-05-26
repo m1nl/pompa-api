@@ -1,5 +1,5 @@
 kind: pipeline
-name: default
+name: cd
 
 clone:
   disable: true
@@ -28,3 +28,9 @@ steps:
   - git add app/pompa-api
   - git commit --allow-empty -m "update pompa-api with $SHORT_COMMIT ($DRONE_COMMIT_MESSAGE) by $DRONE_COMMIT_AUTHOR"
   - git push origin master
+
+trigger:
+  branch:
+  - master
+  event:
+  - push
