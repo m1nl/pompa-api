@@ -1,5 +1,5 @@
 class VictimSerializer < ApplicationSerializer
-  attributes :id, :first_name, :last_name, :display_name, :gender, :department, :email, :comment, :code, :state, :sent_date, :message_id, :last_error, :error_count, :scenario_id, :target_id
+  attributes :id, :first_name, :last_name, :display_name, :gender, :department, :email, :comment, :code, :state, :state_order, :sent_date, :message_id, :last_error, :error_count, :scenario_id, :target_id
   belongs_to :scenario
   belongs_to :target
   has_many :events

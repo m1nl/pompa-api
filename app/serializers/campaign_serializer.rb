@@ -1,5 +1,5 @@
 class CampaignSerializer < ApplicationSerializer
-  attributes :id, :name, :description, :model, :start_date, :started_date, :finish_date, :finished_date, :state
+  attributes :id, :name, :description, :model, :start_date, :started_date, :finish_date, :finished_date, :state, :state_order
   has_many :scenarios
 
   def links
