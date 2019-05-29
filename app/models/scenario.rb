@@ -107,8 +107,10 @@ class Scenario < ApplicationRecord
       next if campaign.nil?
 
       campaign.with_worker_lock do
-        campaign.resync
-        campaign.pause if campaign.state == Campaign::STARTED
+        sync = campaign.worker_active?
+
+        campaign.resync(:sync => sync)
+        campaign.pause(:sync => sync) if campaign.state == Campaign::STARTED
       end
     end
   end

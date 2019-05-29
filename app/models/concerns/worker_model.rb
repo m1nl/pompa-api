@@ -63,7 +63,9 @@ module WorkerModel
     def worker_update
       Pompa::RedisConnection.redis { |r|
         r.del(worker_started_key_name) } if saved_change_to_jid?
-      resync if trigger_resync?
+
+      sync = worker_active?
+      resync(:sync => sync) if trigger_resync?
     end
 
     def worker_started_key_name
