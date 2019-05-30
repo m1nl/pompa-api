@@ -27,8 +27,8 @@ module WorkerModel
       self.class.public_send(m)
     end }
 
-  [:start_worker, :stop_worker, :worker_active?, :worker_cancelled?,
-    :worker_started?].each { |m| define_method m do |opts = {}|
+  [:start_worker, :stop_worker, :worker_active?,
+   :worker_started?].each { |m| define_method m do |opts = {}|
       self.class.public_send(m, instance_id, opts)
     end }
 
@@ -136,7 +136,7 @@ module WorkerModel
 
       def start_worker(instance_id, opts = {})
         with_worker_lock(opts.merge(:instance_id => instance_id)) do
-          return if !opts.delete(:force) && worker_active?(instance_id, opts)
+          return if !opts.delete(:force) && worker_started?(instance_id, opts)
 
           worker_class.perform_later(opts.merge(:instance_id => instance_id)
             .except(*Pompa::Worker::REDIS_OPTS))
@@ -148,22 +148,20 @@ module WorkerModel
         discard = !!opts.delete(:discard)
 
         with_worker_lock(opts.merge(:instance_id => instance_id)) do
-          # force DB query to check if worker is running
-          Pompa::RedisConnection.redis { |r|
-            r.del(worker_started_key_name(instance_id)) }
-
           if worker_active?(instance_id, opts)
             cancel(opts.merge(:instance_id => instance_id, :discard => discard))
           else
             discard(opts.merge(:instance_id => instance_id)) if discard
           end
+
+          # force DB query to check if worker is running
+          Pompa::RedisConnection.redis { |r|
+            r.del(worker_started_key_name(instance_id)) }
         end
       end
 
       def worker_active?(instance_id, opts = {})
         with_worker_lock(opts.merge(:instance_id => instance_id)) do
-          return true if worker_started?(instance_id, opts)
-
           current_jid = self
             .where(id: instance_id)
             .pick(:jid)
@@ -172,23 +170,17 @@ module WorkerModel
 
           current_worker = Worker.find_by_id(current_jid)
 
-          !current_worker.nil? && current_worker.valid? &&
-            ![Pompa::Worker::FAILED, Pompa::Worker::CANCELLED].include?(
-            current_worker.worker_state) && worker_started!(instance_id, opts)
+          return worker_started!(instance_id, opts) if !current_worker.nil? &&
+            current_worker.valid? && ![Pompa::Worker::FAILED,
+            Pompa::Worker::CANCELLED].include?(current_worker.worker_state)
         end
       end
 
       def worker_started?(instance_id, opts = {})
         with_worker_lock(opts.merge(:instance_id => instance_id)) do
           Pompa::RedisConnection.redis(opts) { |r|
-            r.exists(worker_started_key_name(instance_id)) }
-        end
-      end
-
-      def worker_cancelled?(instance_id, opts = {})
-        with_worker_lock(opts.merge(:instance_id => instance_id)) do
-          Pompa::RedisConnection.redis(opts) { |r|
-            r.exists(cancel_key_name(instance_id)) }
+            r.exists(worker_started_key_name(instance_id)) ||
+              worker_active?(instance_id, opts) }
         end
       end
 
