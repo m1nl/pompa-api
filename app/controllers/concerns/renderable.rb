@@ -12,9 +12,11 @@ module Renderable
   DEFAULT_SORT = { :id => :asc }.freeze
 
   def renderable_record_invalid(error = nil)
-    raise error if !error.respond_to?(:record)
+    if !error.nil?
+      raise error if !error.respond_to?(:record)
 
-    render_errors error.record.errors, { status: :unprocessable_entity }
+      render_errors error.record.errors, { status: :unprocessable_entity }
+    end
   end
 
   protected
