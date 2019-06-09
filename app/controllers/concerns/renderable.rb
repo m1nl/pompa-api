@@ -27,7 +27,7 @@ module Renderable
       ignore = opts.delete(:ignore) || {}
       klass = opts.delete(:class) || collection.klass
 
-      controller = "#{klass.name.pluralize}Controller".constantize
+      controller = self.class.controller_for(klass.name)
 
       unless ignore.include?(:include)
         collection = controller
@@ -44,7 +44,7 @@ module Renderable
       unless ignore.include?(:filter)
         collection = controller
           .recordset_apply(:params => filter_params,
-            :apply => method(:filter_recordset), :joins => :joins,
+            :apply => method(:filter_recordset), :joins => :left_joins,
             :recordset => collection)
       end
 
@@ -127,60 +127,65 @@ module Renderable
     end
 
     module RenderableClassMethods
-        def recordset_apply(options)
-          apply = options.delete(:apply)
-          joins = options.delete(:joins)
-          params = options.delete(:params)
+      def recordset_apply(options)
+        apply = options.delete(:apply)
+        joins = options.delete(:joins)
+        params = options.delete(:params)
 
-          recordset = options.delete(:recordset)
-          recordset ||= self.model.all
+        recordset = options.delete(:recordset)
+        recordset ||= self.model.all
 
-          apply_params = params.slice(*model_columns)
+        apply_params = params.slice(*model_columns)
 
-          result = recordset
+        result = recordset
 
-          if apply.respond_to?(:call)
-            result = apply.call(result, apply_params, model)
-          elsif apply.is_a?(Symbol)
-            result = result.public_send(apply, apply_params)
-          end
+        if apply.respond_to?(:call)
+          result = apply.call(result, apply_params, model)
+        elsif apply.is_a?(Symbol)
+          result = result.public_send(apply, apply_params)
+        end
 
-          params.slice(*model_associations).keys.each do |k|
-            association = self.model.reflections[k.to_s]
-            foreign_controller = "#{association.class_name.pluralize}Controller"
-              .constantize
-            if foreign_controller.respond_to?(:recordset_apply)
+        params.slice(*model_associations).keys.each do |k|
+          association = self.model.reflections[k.to_s]
+          foreign_controller = controller_for(association.class_name)
 
-              if joins.respond_to?(:call)
-                result = joins.call(result, association.name.to_sym)
-              elsif joins.is_a?(Symbol)
-                result = result.public_send(joins, association.name.to_sym)
-              end
-
-              result = result.merge(foreign_controller.recordset_apply(
-                {
-                  :params => params[association.name],
-                  :apply => apply,
-                  :joins => joins
-                }))
+          if foreign_controller < Renderable
+            if joins.respond_to?(:call)
+              result = joins.call(result, association.name.to_sym)
+            elsif joins.is_a?(Symbol)
+              result = result.public_send(joins, association.name.to_sym)
             end
+
+            result = result.merge(foreign_controller.recordset_apply(
+              {
+                :params => params[association.name],
+                :apply => apply,
+                :joins => joins
+              }))
           end
-
-          return result
         end
 
-        def model
-          @model ||= "#{controller_name.camelize.singularize}".constantize
-        end
+        return result
+      end
 
-        def model_columns
-          @model_columns ||= model.column_names.clone.map(&:to_sym)
-        end
+      def model
+        @model ||= "#{controller_name.camelize.singularize}".constantize
+      end
 
-        def model_associations
-          @model_associations ||= model.reflect_on_all_associations
-            .map { |a| a.name.to_sym }
-        end
+      def model_columns
+        @model_columns ||= model.column_names.clone.map(&:to_sym)
+      end
+
+      def model_associations
+        @model_associations ||= model.reflect_on_all_associations
+          .map { |a| a.name.to_sym }
+      end
+
+      def controller_for(model_name)
+        @controller_for_cache ||= {}
+        @controller_for_cache[model_name.underscore.to_sym] ||=
+            "#{model_name.capitalize.pluralize}Controller".constantize
+      end
     end
 
   private
@@ -269,7 +274,7 @@ module Renderable
               predicate = :lt
               value.slice!(0)
             elsif value.starts_with?('!')
-              predicate = :not_eq
+              predicate = :is_distinct_from
               value.slice!(0)
             end
           end
