@@ -248,9 +248,9 @@ module Renderable
     end
 
     def filter_recordset(recordset, filter_hash, model)
-      conditions = nil
+      conjunction = nil
 
-      filter_hash.each do |k,v|
+      filter_hash.each do |k, v|
         next if !model.columns_hash.include?(k)
 
         arel = model.arel_table[k]
@@ -258,34 +258,45 @@ module Renderable
 
         values = Array(v)
         values.each do |value|
-          predicate = :eq
+          value = value.to_s
+          alternatives = nil
 
-          if value.is_a?(String) && type != :string
-            if value.starts_with?('>=')
-              predicate = :gteq
-              value.slice!(0)
-            elsif value.starts_with?('<=')
-              predicate = :lteq
-              value.slice!(0)
-            elsif value.starts_with?('>')
-              predicate = :gt
-              value.slice!(0)
-            elsif value.starts_with?('<')
-              predicate = :lt
-              value.slice!(0)
-            elsif value.starts_with?('!')
-              predicate = :is_distinct_from
-              value.slice!(0)
+          if type == :string
+            alternatives = arel.eq(value)
+          else
+            predicate = :eq
+
+            value.split(',').each do |v|
+              if v.starts_with?('>=')
+                predicate = :gteq
+                v.slice!(0)
+              elsif v.starts_with?('<=')
+                predicate = :lteq
+                v.slice!(0)
+              elsif v.starts_with?('>')
+                predicate = :gt
+                v.slice!(0)
+              elsif v.starts_with?('<')
+                predicate = :lt
+                v.slice!(0)
+              elsif v.starts_with?('!')
+                predicate = :is_distinct_from
+                v.slice!(0)
+              end
+
+              cast_v = model.type_for_attribute(k.to_s).cast(v)
+              condition = arel.public_send(predicate, cast_v)
+
+              alternatives = !alternatives.nil? ?
+                alternatives.or(condition) : condition
             end
           end
 
-          cast_value = model.type_for_attribute(k.to_s).cast(value)
-          condition = arel.public_send(predicate, cast_value)
-
-          conditions = !conditions.nil? ? conditions.and(condition) : condition
+          conjunction = !conjunction.nil? ?
+            conjunction.and(alternatives) : alternatives
         end
       end
 
-      recordset.where(conditions)
+      recordset.where(conjunction)
     end
 end
