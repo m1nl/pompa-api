@@ -184,7 +184,7 @@ module Renderable
       def controller_for(model_name)
         @controller_for_cache ||= {}
         @controller_for_cache[model_name.underscore.to_sym] ||=
-            "#{model_name.capitalize.pluralize}Controller".constantize
+            "#{model_name.pluralize}Controller".constantize
       end
     end
 
