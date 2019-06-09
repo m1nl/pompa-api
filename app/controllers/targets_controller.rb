@@ -56,6 +56,15 @@ class TargetsController < ApplicationController
     end
   end
 
+  # POST /targets/from-victims
+  def from_victims
+    hash = { }
+    hash[:group_id] = params.fetch(:group_id) if !params[:group_id].blank?
+    victims = filter_collection(Victim.all)
+    Target.from_victims(victims, hash)
+    head :no_content
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_target

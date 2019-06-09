@@ -15,6 +15,7 @@ Rails.application.routes.draw do
       resources :workers, only: [:index, :show]
 
       match '/targets/upload', via: [:post, :put], to: 'targets#upload'
+      match '/targets/from-victims', via: [:post, :put], to: 'targets#from_victims'
 
       post '/groups/:id/clear', to: 'groups#clear'
 

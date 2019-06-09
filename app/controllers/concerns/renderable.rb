@@ -3,32 +3,44 @@ module Renderable
 
   included do
     extend RenderableClassMethods
+
+    rescue_from ActiveRecord::RecordInvalid,
+      :with => :renderable_record_invalid
   end
 
   LOCATION = 'Location'.freeze
   DEFAULT_SORT = { :id => :asc }.freeze
 
-  protected
-    def render_collection(collection = [], opts = {})
-      meta_param = { }
+  def renderable_record_invalid(error = nil)
+    raise error if !error.respond_to?(:record)
 
+    render_errors error.record.errors, { status: :unprocessable_entity }
+  end
+
+  protected
+    def filter_collection(collection = [], opts = {})
       collection = collection.all
+
+      meta_param = opts.delete(:meta) || {}
       ignore = opts.delete(:ignore) || {}
+      klass = opts.delete(:class) || collection.klass
+
+      controller = "#{klass.name.pluralize}Controller".constantize
 
       unless ignore.include?(:include)
-        collection = self.class
+        collection = controller
           .recordset_apply(:params => include_params, :joins => :includes,
             :recordset => collection)
       end
 
       unless ignore.include?(:join)
-        collection = self.class
+        collection = controller
           .recordset_apply(:params => join_params, :joins => :joins,
             :recordset => collection)
       end
 
       unless ignore.include?(:filter)
-        collection = self.class
+        collection = controller
           .recordset_apply(:params => filter_params,
             :apply => method(:filter_recordset), :joins => :joins,
             :recordset => collection)
@@ -49,7 +61,7 @@ module Renderable
 
       unless ignore.include?(:sort)
         sort_params.each { |s|
-          collection = self.class
+          collection = controller
             .recordset_apply(:params => s, :joins => :joins,
               :apply => :order, :recordset => collection) }
       end
@@ -58,7 +70,21 @@ module Renderable
         collection = collection.distinct if distinct_param
       end
 
-      collection = yield collection if block_given?
+      colllection = yield collection if block_given?
+
+      return collection
+    end
+
+    def render_collection(collection = [], opts = {})
+      meta_param = opts.delete(:meta) || {}
+
+      if block_given?
+        collection = filter_collection(collection,
+          opts.merge(:meta => meta_param)) { yield collection }
+      else
+        collection = filter_collection(collection,
+          opts.merge(:meta => meta_param))
+      end
 
       render({ json: collection, include: include_params, meta: meta_param }
         .merge!(opts))
@@ -82,7 +108,8 @@ module Renderable
       response.set_header(LOCATION, location) if !location.nil?
       response.status = opts.delete(:status) || :accepted
 
-      render({ json: { :status => :pending, :tracking => { :url => location } } }.merge!(opts))
+      render({ json: { :status => :pending,
+        :tracking => { :url => location } } }.merge!(opts))
     end
 
     def render_worker_response(worker_response, opts = {})

@@ -10,6 +10,8 @@ class Target < ApplicationRecord
   CSV_ROW = [:first_name, :last_name, :email, :gender, :department, :comment, :group_id].freeze
   CSV_OPTIONS = { col_sep: ',', quote_char:'"' }.freeze
 
+  IMPORT_COLUMNS = CSV_ROW
+
   belongs_to :group, required: true
   has_one :victim, required: false
   has_one :quicksearch, foreign_key: 'target_id',
@@ -29,25 +31,54 @@ class Target < ApplicationRecord
   end
 
   class << self
-    def upload_csv(file, params)
+    def upload_csv(file, params = {})
       ids = []
 
       ActiveRecord::Base.transaction do
+        params = params.symbolize_keys
         targets = []
 
         CSV.foreach(file.path, CSV_OPTIONS) do |r|
-          target_attributes = Hash[CSV_ROW.zip(r)].merge(params.symbolize_keys)
-            .slice(*Target.column_names.map(&:to_sym))
+          target_attributes = Hash[CSV_ROW.zip(r)]
+            .merge(params)
+            .slice(*IMPORT_COLUMNS)
           targets << Target.new(target_attributes)
 
           if targets.length >= batch_size
-            ids.concat Target.import(targets, validate => true)[:ids]
-            targets = []
+            ids.concat Target.import(targets, :validate => true,
+              :raise_error => true)[:ids]
+            targets.clear
           end
         end
 
         if targets.length != 0
-          ids.concat Target.import(targets, validate => true)[:ids]
+          ids.concat Target.import(targets, :validate => true,
+            :raise_error => true)[:ids]
+        end
+      end
+
+      return ids
+    end
+
+    def from_victims(victims, params = {})
+      ids = []
+
+      ActiveRecord::Base.transaction do
+        params = params.symbolize_keys
+        targets = []
+
+        victims.find_in_batches(:batch_size => batch_size) do |victims|
+          victims.each do |v|
+            target_attributes = v.attributes
+              .symbolize_keys
+              .merge(params)
+              .slice(*IMPORT_COLUMNS)
+            targets << Target.new(target_attributes)
+          end
+
+          ids.concat Target.import(targets, :validate => true,
+            :raise_error => true)[:ids]
+          targets.clear
         end
       end
 
