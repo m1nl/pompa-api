@@ -73,7 +73,14 @@ class ResourcesController < ApplicationController
   # POST /resources/1/upload
   # PUT /resources/1/upload
   def upload
-    @resource.update(file: params.require(:file))
+    @file = params.require(:file)
+    @resource.file.attach({
+      io: @file,
+      filename: @file.original_filename,
+      content_type: @file.content_type,
+      identify: false
+    })
+
     head :no_content
   end
 
