@@ -21,7 +21,7 @@ module Renderable
 
   protected
     def filter_collection(collection = [], opts = {})
-      collection = collection.all
+      collection = collection.all if collection.respond_to?(:all)
 
       meta_param = opts.delete(:meta) || {}
       ignore = opts.delete(:ignore) || {}
@@ -72,21 +72,16 @@ module Renderable
         collection = collection.distinct if distinct_param
       end
 
-      colllection = yield collection if block_given?
-
       return collection
     end
 
     def render_collection(collection = [], opts = {})
       meta_param = opts.delete(:meta) || {}
 
-      if block_given?
-        collection = filter_collection(collection,
-          opts.merge(:meta => meta_param)) { yield collection }
-      else
-        collection = filter_collection(collection,
-          opts.merge(:meta => meta_param))
-      end
+      collection = filter_collection(collection,
+        opts.merge(:meta => meta_param))
+
+      collection = yield collection if block_given?
 
       render({ json: collection, include: include_params, meta: meta_param }
         .merge!(opts))
