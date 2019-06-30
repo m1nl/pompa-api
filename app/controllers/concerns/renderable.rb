@@ -44,8 +44,7 @@ module Renderable
       unless ignore.include?(:filter)
         collection = controller
           .recordset_apply(:params => filter_params,
-            :apply => method(:filter_recordset), :joins => :left_joins,
-            :recordset => collection)
+            :apply => method(:filter_recordset), :recordset => collection)
       end
 
       unless ignore.include?(:quicksearch)
@@ -64,7 +63,7 @@ module Renderable
       unless ignore.include?(:sort)
         sort_params.each { |s|
           collection = controller
-            .recordset_apply(:params => s, :joins => :joins,
+            .recordset_apply(:params => s, :joins => :left_joins,
               :apply => :order, :recordset => collection) }
       end
 
@@ -141,22 +140,48 @@ module Renderable
         end
 
         params.slice(*model_associations).keys.each do |k|
-          association = self.model.reflections[k.to_s]
+          key = k.to_s.dup
+
+          negate = key.starts_with?('!')
+          key.slice!(0) if negate
+
+          association = self.model.reflections[key]
           foreign_controller = controller_for(association.class_name)
+          foreign_key = association.foreign_key.to_sym
 
           if foreign_controller < Renderable
-            if joins.respond_to?(:call)
-              result = joins.call(result, association.name.to_sym)
-            elsif joins.is_a?(Symbol)
-              result = result.public_send(joins, association.name.to_sym)
-            end
+            options_hash = {
+              :params => params[k],
+              :apply => apply,
+              :joins => joins,
+            }
 
-            result = result.merge(foreign_controller.recordset_apply(
-              {
-                :params => params[association.name],
-                :apply => apply,
-                :joins => joins
-              }))
+            if joins.respond_to?(:call)
+              result = joins
+                .call(result, association.name.to_sym)
+                .merge(foreign_controller.recordset_apply(options_hash))
+            elsif joins.is_a?(Symbol)
+              result = result
+                .public_send(joins, association.name.to_sym)
+                .merge(foreign_controller.recordset_apply(options_hash))
+            else
+              condition = {}
+
+              if association.macro == :belongs_to
+                primary_key = association.klass.primary_key.to_sym
+                condition[foreign_key] = foreign_controller
+                  .recordset_apply(options_hash)
+                  .select(primary_key)
+              else
+                primary_key = self.model.primary_key.to_sym
+                condition[primary_key] = foreign_controller
+                  .recordset_apply(options_hash)
+                  .select(foreign_key)
+              end
+
+              result = negate ? result
+                .where.not(condition) : result.where(condition)
+            end
           end
         end
 
@@ -173,7 +198,7 @@ module Renderable
 
       def model_associations
         @model_associations ||= model.reflect_on_all_associations
-          .map { |a| a.name.to_sym }
+          .map { |a| [a.name.to_sym, "!#{a.name}".to_sym] }.flatten
       end
 
       def controller_for(model_name)
