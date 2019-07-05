@@ -83,8 +83,16 @@ class MailerWorkerJob < WorkerJob
       end
     end
 
+    def invoke(opts = {})
+      @elapsed = 0
+      @deliveries = 0
+    end
+
     def tick
       redis.with do |r|
+        starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        messages_num = 0
+
         while message_queue.length == 0 do
           json = r.rpop(mail_queue_key_name)
           break if json.nil?
@@ -103,6 +111,19 @@ class MailerWorkerJob < WorkerJob
           end
 
           response(deliver(mail), mail[:reply_to])
+          messages_num += 1
+        end
+
+        if messages_num > 0
+          ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+          @elapsed += ending - starting
+          @deliveries += messages_num
+
+          messages_per_minute = (60 / (@elapsed / @deliveries)).round
+
+          multi_logger.info("Processed #{@deliveries} messages in " +
+            "#{@elapsed.round(2)}s so far (#{messages_per_minute} per minute)")
         end
 
         mark if r.llen(mail_queue_key_name) > 0
