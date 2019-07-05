@@ -120,13 +120,22 @@ module Pompa
         @config[db] = config.merge(symbol_values)
       end
 
-      private
-        def redis_common_pool
-          @redis_common_pool ||= pool
+      def pool_size=(value)
+        if !value.nil?
+          @pool_size = value
+          @redis_common_pool = nil
         end
 
+        pool_size
+      end
+
+      private
         def pool_size
           @pool_size ||= Rails.configuration.pompa.redis.pool_size
+        end
+
+        def redis_common_pool
+          @redis_common_pool ||= pool
         end
 
         def lock_manager(opts = {})

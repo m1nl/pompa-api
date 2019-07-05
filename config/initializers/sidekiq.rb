@@ -8,6 +8,16 @@ Sidekiq.configure_server do |config|
   Rails.application.config.cache_classes = true
   Rails.application.config.eager_load = true
 
-  ActiveRecord::Base.configurations[Rails.env]['pool'] = Sidekiq.options[:concurrency] + 5
-  config.redis = Pompa::RedisConnection.pool(size: Sidekiq.options[:concurrency] + 5)
+  ActiveRecord::Base.connection_pool.disconnect!
+
+  ActiveSupport.on_load(:active_record) do
+    active_record_config = ActiveRecord::Base.configurations[Rails.env] ||
+      Rails.application.config.database_configuration[Rails.env]
+    active_record_config['pool'] = Sidekiq.options[:concurrency] + 5
+
+    ActiveRecord::Base.establish_connection(active_record_config)
+  end
+
+  Pompa::RedisConnection.pool_size = Sidekiq.options[:concurrency] + 5
+  config.redis = Pompa::RedisConnection.common_pool
 end
