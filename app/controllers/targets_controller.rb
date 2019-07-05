@@ -48,6 +48,7 @@ class TargetsController < ApplicationController
     begin
       hash = params.permit(:file, :group_id, :'Content-Type').to_unsafe_h
       Target.upload_csv(hash.delete(:file), hash)
+
       head :no_content
     rescue CSV::MalformedCSVError, ArgumentError => e
       multi_logger.error{"Unable to parse CSV file: #{e.class}: #{e.message}"}
@@ -58,10 +59,10 @@ class TargetsController < ApplicationController
 
   # POST /targets/from-victims
   def from_victims
-    hash = { }
+    hash = {}
     hash[:group_id] = params.fetch(:group_id) if !params[:group_id].blank?
-    victims = filter_collection(Victim.all)
-    Target.from_victims(victims, hash)
+    Target.from_victims(filter_collection(Victim.all), hash)
+
     head :no_content
   end
 
