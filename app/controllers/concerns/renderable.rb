@@ -140,7 +140,7 @@ module Renderable
         end
 
         params.slice(*model_associations).keys.each do |k|
-          key = k.to_s
+          key = k.to_s.dup
 
           negate = key.starts_with?('!')
           key.slice!(0) if negate
