@@ -155,12 +155,14 @@ module Renderable
             child_params = params[k]
 
             if child_params.is_a?(Hash)
-              if child_params.keys.all?(Numeric)
+              if child_params.keys.all? { |p| p.is_i? }
                 child_params = child_params.values
+              else
+                child_params = [child_params]
               end
             end
 
-            Array(child_params).each do |p|
+            child_params.each do |p|
               options_hash = {
                 :params => p,
                 :apply => apply,
