@@ -1,0 +1,1 @@
+require 'pompa/extensions/string'

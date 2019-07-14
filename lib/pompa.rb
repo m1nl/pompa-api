@@ -1,5 +1,6 @@
 require 'pompa'
 require 'pompa/utils'
+require 'pompa/extensions'
 require 'pompa/multi_logger'
 require 'pompa/redis_connection'
 require 'pompa/cache'
