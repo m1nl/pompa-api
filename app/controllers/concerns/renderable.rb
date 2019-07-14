@@ -129,6 +129,8 @@ module Renderable
         recordset = options.delete(:recordset)
         recordset ||= self.model.all
 
+        return recordset if !params.is_a?(Hash)
+
         apply_params = params.slice(*model_columns)
 
         result = recordset
@@ -150,37 +152,47 @@ module Renderable
           foreign_key = association.foreign_key.to_sym
 
           if foreign_controller < Renderable
-            options_hash = {
-              :params => params[k],
-              :apply => apply,
-              :joins => joins,
-            }
+            child_params = params[k]
 
-            if joins.respond_to?(:call)
-              result = joins
-                .call(result, association.name.to_sym)
-                .merge(foreign_controller.recordset_apply(options_hash))
-            elsif joins.is_a?(Symbol)
-              result = result
-                .public_send(joins, association.name.to_sym)
-                .merge(foreign_controller.recordset_apply(options_hash))
-            else
-              condition = {}
-
-              if association.macro == :belongs_to
-                primary_key = association.klass.primary_key.to_sym
-                condition[foreign_key] = foreign_controller
-                  .recordset_apply(options_hash)
-                  .select(primary_key)
-              else
-                primary_key = self.model.primary_key.to_sym
-                condition[primary_key] = foreign_controller
-                  .recordset_apply(options_hash)
-                  .select(foreign_key)
+            if child_params.is_a?(Hash)
+              if child_params.keys.all?(Numeric)
+                child_params = child_params.values
               end
+            end
 
-              result = negate ? result
-                .where.not(condition) : result.where(condition)
+            Array(child_params).each do |p|
+              options_hash = {
+                :params => p,
+                :apply => apply,
+                :joins => joins,
+              }
+
+              if joins.respond_to?(:call)
+                result = joins
+                  .call(result, association.name.to_sym)
+                  .merge(foreign_controller.recordset_apply(options_hash))
+              elsif joins.is_a?(Symbol)
+                result = result
+                  .public_send(joins, association.name.to_sym)
+                  .merge(foreign_controller.recordset_apply(options_hash))
+              else
+                condition = {}
+
+                if association.macro == :belongs_to
+                  primary_key = association.klass.primary_key.to_sym
+                  condition[foreign_key] = foreign_controller
+                    .recordset_apply(options_hash)
+                    .select(primary_key)
+                else
+                  primary_key = self.model.primary_key.to_sym
+                  condition[primary_key] = foreign_controller
+                    .recordset_apply(options_hash)
+                    .select(foreign_key)
+                end
+
+                result = negate ? result
+                  .where.not(condition) : result.where(condition)
+              end
             end
           end
         end
