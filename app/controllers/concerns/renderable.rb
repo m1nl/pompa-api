@@ -43,8 +43,7 @@ module Renderable
 
       unless ignore.include?(:filter)
         collection = controller
-          .recordset_apply(:params => filter_params,
-            :apply => method(:filter_recordset), :recordset => collection)
+          .recordset_filter(:params => filter_params, :recordset => collection)
       end
 
       unless ignore.include?(:quicksearch)
@@ -129,8 +128,6 @@ module Renderable
         recordset = options.delete(:recordset)
         recordset ||= self.model.all
 
-        return recordset if !params.is_a?(Hash)
-
         apply_params = params.slice(*model_columns)
 
         result = recordset
@@ -140,6 +137,47 @@ module Renderable
         elsif apply.is_a?(Symbol)
           result = result.public_send(apply, apply_params)
         end
+
+        return result if !params.is_a?(Hash)
+
+        params.slice(*model_associations).keys.each do |k|
+          key = k.to_s
+
+          association = self.model.reflections[key]
+          foreign_controller = controller_for(association.class_name)
+
+          if foreign_controller < Renderable
+            options_hash = {
+              :params => params[association.name],
+              :apply => apply,
+              :joins => joins,
+            }
+
+            if joins.respond_to?(:call)
+              result = joins
+                .call(result, association.name.to_sym)
+                .merge(foreign_controller.recordset_apply(options_hash))
+            elsif joins.is_a?(Symbol)
+              result = result
+                .public_send(joins, association.name.to_sym)
+                .merge(foreign_controller.recordset_apply(options_hash))
+            end
+          end
+        end
+
+        return result
+      end
+
+      def recordset_filter(options)
+        params = options.delete(:params)
+
+        recordset = options.delete(:recordset)
+        recordset ||= self.model.all
+
+        filter_params = params.slice(*model_columns)
+        result = apply_filter(recordset, filter_params)
+
+        return result if !params.is_a?(Hash)
 
         params.slice(*model_associations).keys.each do |k|
           key = k.to_s.dup
@@ -152,54 +190,99 @@ module Renderable
           foreign_key = association.foreign_key.to_sym
 
           if foreign_controller < Renderable
-            child_params = params[k]
+            foregin_params = params[k]
 
-            if child_params.is_a?(Hash)
-              if child_params.keys.all? { |p| p.is_i? }
-                child_params = child_params.values
+            if foregin_params.is_a?(Hash)
+              if foregin_params.keys.all? { |p| p.is_i? }
+                foregin_params = foregin_params.values
               else
-                child_params = [child_params]
+                foregin_params = [foregin_params]
               end
             end
 
-            child_params.each do |p|
-              options_hash = {
-                :params => p,
-                :apply => apply,
-                :joins => joins,
-              }
+            foregin_params.each do |p|
+              condition = {}
 
-              if joins.respond_to?(:call)
-                result = joins
-                  .call(result, association.name.to_sym)
-                  .merge(foreign_controller.recordset_apply(options_hash))
-              elsif joins.is_a?(Symbol)
-                result = result
-                  .public_send(joins, association.name.to_sym)
-                  .merge(foreign_controller.recordset_apply(options_hash))
+              if association.macro == :belongs_to
+                primary_key = association.klass.primary_key.to_sym
+                condition[foreign_key] = foreign_controller
+                  .recordset_filter(:params => p)
+                  .select(primary_key)
               else
-                condition = {}
-
-                if association.macro == :belongs_to
-                  primary_key = association.klass.primary_key.to_sym
-                  condition[foreign_key] = foreign_controller
-                    .recordset_apply(options_hash)
-                    .select(primary_key)
-                else
-                  primary_key = self.model.primary_key.to_sym
-                  condition[primary_key] = foreign_controller
-                    .recordset_apply(options_hash)
-                    .select(foreign_key)
-                end
-
-                result = negate ? result
-                  .where.not(condition) : result.where(condition)
+                primary_key = self.model.primary_key.to_sym
+                condition[primary_key] = foreign_controller
+                  .recordset_filter(:params => p)
+                  .select(foreign_key)
               end
+
+              result = negate ? result
+                .where.not(condition) : result.where(condition)
             end
           end
         end
 
         return result
+      end
+
+      def apply_filter(recordset, filter_params)
+        conjunction = nil
+
+        return recordset if !filter_params.is_a?(Hash)
+
+        filter_params.each do |k, v|
+          next if !model.columns_hash.include?(k)
+
+          arel = model.arel_table[k]
+          type = model.type_for_attribute(k).type
+
+          values = Array(v)
+          values.each do |value|
+            value = value.to_s
+            alternatives = nil
+
+            if type == :string
+              alternatives = arel.eq(value)
+            else
+              predicate = :eq
+
+              value.split(',').each do |v|
+                if v.starts_with?('>=')
+                  predicate = :gteq
+                  v.slice!(0)
+                elsif v.starts_with?('<=')
+                  predicate = :lteq
+                  v.slice!(0)
+                elsif v.starts_with?('>')
+                  predicate = :gt
+                  v.slice!(0)
+                elsif v.starts_with?('<')
+                  predicate = :lt
+                  v.slice!(0)
+                elsif v.starts_with?('!')
+                  predicate = :is_distinct_from
+                  v.slice!(0)
+                end
+
+                cast_v = model.type_for_attribute(k.to_s).cast(v)
+                condition = arel.public_send(predicate, cast_v)
+
+                alternatives = !alternatives.nil? ?
+                  alternatives.or(condition) : condition
+              end
+            end
+
+            conjunction = !conjunction.nil? ?
+              conjunction.and(alternatives) : alternatives
+          end
+        end
+
+        return recordset.where(conjunction)
+      end
+
+      def controller_for(model_name)
+        @controller_for_cache ||= {}
+        @controller_for_cache[model_name.underscore.to_sym] ||=
+            "#{model_name.pluralize}Controller".constantize
       end
 
       def model
@@ -213,12 +296,6 @@ module Renderable
       def model_associations
         @model_associations ||= model.reflect_on_all_associations
           .map { |a| [a.name.to_sym, "!#{a.name}".to_sym] }.flatten
-      end
-
-      def controller_for(model_name)
-        @controller_for_cache ||= {}
-        @controller_for_cache[model_name.underscore.to_sym] ||=
-            "#{model_name.pluralize}Controller".constantize
       end
     end
 
@@ -279,58 +356,5 @@ module Renderable
         total_pages: collection.total_pages,
         current_page: collection.current_page,
       }
-    end
-
-    def filter_recordset(recordset, filter_hash, model)
-      conjunction = nil
-
-      filter_hash.each do |k, v|
-        next if !model.columns_hash.include?(k)
-
-        arel = model.arel_table[k]
-        type = model.type_for_attribute(k).type
-
-        values = Array(v)
-        values.each do |value|
-          value = value.to_s
-          alternatives = nil
-
-          if type == :string
-            alternatives = arel.eq(value)
-          else
-            predicate = :eq
-
-            value.split(',').each do |v|
-              if v.starts_with?('>=')
-                predicate = :gteq
-                v.slice!(0)
-              elsif v.starts_with?('<=')
-                predicate = :lteq
-                v.slice!(0)
-              elsif v.starts_with?('>')
-                predicate = :gt
-                v.slice!(0)
-              elsif v.starts_with?('<')
-                predicate = :lt
-                v.slice!(0)
-              elsif v.starts_with?('!')
-                predicate = :is_distinct_from
-                v.slice!(0)
-              end
-
-              cast_v = model.type_for_attribute(k.to_s).cast(v)
-              condition = arel.public_send(predicate, cast_v)
-
-              alternatives = !alternatives.nil? ?
-                alternatives.or(condition) : condition
-            end
-          end
-
-          conjunction = !conjunction.nil? ?
-            conjunction.and(alternatives) : alternatives
-        end
-      end
-
-      recordset.where(conjunction)
     end
 end
