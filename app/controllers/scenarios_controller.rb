@@ -81,8 +81,6 @@ class ScenariosController < ApplicationController
     end
 
     def scenario_invalid_state(error)
-      render :json => { :error =>
-        { :record => [error.message] } },
-        :status => :unprocessable_entity
+      render_errors([{ :record => [error.message] }])
     end
 end

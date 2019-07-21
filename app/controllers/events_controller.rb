@@ -55,8 +55,7 @@ class EventsController < ApplicationController
 
     render_collection(@events, :ignore => [:include, :join, :quicksearch,
       :page, :sort, :distinct]) do |e|
-      goals = Goal.where(:id => e.joins(:goal).order(:goal_id => :asc)
-        .distinct(:goal_id).pluck(:goal_id))
+      goals = Goal.where(:id => e.distinct(:goal_id).pluck(:goal_id))
       series = []
 
       goals.each do |g|
