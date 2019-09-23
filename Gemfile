@@ -38,6 +38,8 @@ group :development, :test do
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
   # Use bullet to optimize N+1 queries
   gem 'bullet'
+  # Use rubocop for static code analysis
+  gem 'rubocop'
 end
 
 group :development do
