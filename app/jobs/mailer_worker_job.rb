@@ -19,7 +19,7 @@ class MailerWorkerJob < WorkerJob
   MULTIPART_ALTERNATIVE_CONTENT_TYPE = 'multipart/alternative'.freeze
   MULTIPART_MIXED_CONTENT_TYPE = 'multipart/mixed'.freeze
 
-  IHASA_PREFIX = "#{self.name}:#{Ihasa::Bucket.name}:%s"
+  IHASA_PREFIX = "#{self.name}:#{Ihasa::Bucket.name}:%s".freeze
 
   SORT_ORDER = [MULTIPART_MIXED_CONTENT_TYPE,
     MULTIPART_ALTERNATIVE_CONTENT_TYPE, TEXT_PLAIN_CONTENT_TYPE,
