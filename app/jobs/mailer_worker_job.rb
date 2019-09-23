@@ -256,7 +256,7 @@ class MailerWorkerJob < WorkerJob
           end
         elsif html_part.nil?
           plaintext_part
-        else plaintext_part.nil?
+        elsif plaintext_part.nil?
           html_part
         end
 
