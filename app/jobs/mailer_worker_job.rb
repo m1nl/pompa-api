@@ -9,7 +9,7 @@ Mail.eager_autoload!
 class MailerWorkerJob < WorkerJob
   include Mail::Utilities
 
-  TEXT_PLAIN_CONTENT_TYPE = 'text/plain'
+  TEXT_PLAIN_CONTENT_TYPE = 'text/plain'.freeze
   TEXT_PLAIN_CONTENT_TYPE_WITH_CHARSET = 'text/plain; charset=UTF-8'.freeze
 
   HTML_CONTENT_TYPE = 'text/html'.freeze
