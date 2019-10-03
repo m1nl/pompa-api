@@ -127,10 +127,9 @@ GEM
       kaminari-core (= 1.1.1)
     kaminari-core (1.1.1)
     liquid (4.0.3)
-    listen (3.1.5)
-      rb-fsevent (~> 0.9, >= 0.9.4)
-      rb-inotify (~> 0.9, >= 0.9.7)
-      ruby_dep (~> 1.2)
+    listen (3.2.0)
+      rb-fsevent (~> 0.10, >= 0.10.3)
+      rb-inotify (~> 0.9, >= 0.9.10)
     loofah (2.3.0)
       crass (~> 1.0.2)
       nokogiri (>= 1.5.9)
@@ -208,7 +207,6 @@ GEM
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 1.4.0, < 1.7)
     ruby-progressbar (1.10.1)
-    ruby_dep (1.5.0)
     rubyzip (2.0.0)
     sidekiq (6.0.1)
       connection_pool (>= 2.2.2)
@@ -270,7 +268,7 @@ DEPENDENCIES
   http
   kaminari
   liquid
-  listen (>= 3.0.5, < 3.2)
+  listen (>= 3.0.5, < 3.3)
   mail
   oj
   pg
