@@ -1,4 +1,5 @@
 require 'liquid'
+require 'addressable'
 
 class Template < ApplicationRecord
   include Pageable
@@ -15,6 +16,7 @@ class Template < ApplicationRecord
   PLAINTEXT = 'plaintext'.freeze
   HTML = 'html'.freeze
   FILENAME = 'filename'.freeze
+  SUFFIX = 'suffix'.freeze
   LOCATION = 'location'.freeze
 
   has_many :goals
@@ -119,14 +121,14 @@ class Template < ApplicationRecord
     class TemplateFilters < Module
       def initialize(template, model, opts = {})
         super() do
-          define_method :resource do |input, filename = nil|
+          define_method :resource do |input, suffix = nil, filename = nil|
             @template ||= template
             @model ||= model
             @opts ||= opts
 
             @resources ||= @template.resources
             raise Liquid::ArgumentError,
-              "unable to access resources" if @resources.nil?
+              'unable to access resources' if @resources.nil?
 
             resource_id = @resources.where(name: input)
               .pick(:id)
@@ -135,6 +137,7 @@ class Template < ApplicationRecord
 
             full_model = Resource.build_model(resource_id,
               @model, @opts)
+            full_model[SUFFIX] = suffix || ''
             full_model[FILENAME] = filename || ''
 
             if !!full_model.dig('resource', 'dynamic')
@@ -153,7 +156,7 @@ class Template < ApplicationRecord
 
             @resources ||= @template.resources
             raise Liquid::ArgumentError,
-              "unable to access resources" if @resources.nil?
+              'unable to access resources' if @resources.nil?
 
             resource = @resources.where(name: input).first
             raise Liquid::ArgumentError,
@@ -169,7 +172,7 @@ class Template < ApplicationRecord
 
             @resources ||= @template.resources
             raise Liquid::ArgumentError,
-              "unable to access resources" if @resources.nil?
+              'unable to access resources' if @resources.nil?
 
             resource_id = @resources.where(name: input)
               .pick(:id)
@@ -189,7 +192,7 @@ class Template < ApplicationRecord
 
             @goals ||= @template.goals
             raise Liquid::ArgumentError,
-              "unable to access goals" if @goals.nil?
+              'unable to access goals' if @goals.nil?
 
             goal_id = @goals.where(name: input)
               .pick(:id)

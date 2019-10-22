@@ -2,7 +2,7 @@ require 'liquid'
 
 module Pompa
   module LiquidExtensions
-    module StringEncodeFilter
+    module StringFilter
       def string_encode(input, encoding)
           input.encode(Encoding.find(encoding))
         rescue StandardError => e
@@ -14,8 +14,12 @@ module Pompa
         rescue StandardError => e
           raise Liquid::ArgumentError.new(e.message)
       end
+
+      def string(input)
+        input.to_s
+      end
     end
   end
 end
 
-Liquid::Template.register_filter(Pompa::LiquidExtensions::StringEncodeFilter)
+Liquid::Template.register_filter(Pompa::LiquidExtensions::StringFilter)

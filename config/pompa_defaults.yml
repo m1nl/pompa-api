@@ -46,10 +46,20 @@ default: &default
     retry_threshold: 5
     expose_header: "X-Victim-Code"
   template:
-    base_url: "http://localhost:3000/api/public"
-    report_url: "{{ template.base_url }}/?g={{ goal.code }}&v={{ victim.code }}{% if location != blank %}&l={{ location | encrypt: true }}{% endif %}"
-    static_resource_url: "{{ template.base_url }}/?r={{ resource.code }}&t={{ resource.cache_key | urlsafe_digest }}{% if filename != blank %}&f={{ filename | encrypt: false }}{% endif %}"
-    dynamic_resource_url: "{{ template.base_url }}/?r={{ resource.code }}&v={{ victim.code }}{% if filename != blank %}&f={{ filename | encrypt: false }}{% endif %}"
+    base_url: "http://localhost:3000/api/public/"
+    report_url: >-
+      {%- assign query = '?g=' | append: goal.code | append: '&v=' | append: victim.code -%}
+      {%- unless location == blank -%}{%- assign location = location | encrypt: true -%}{%- assign query = query | append: '&l=' | append: location -%}{%- endunless -%}
+      {{ template.base_url | append_url: query | string }}
+    static_resource_url: >-
+      {%- assign timestamp = resource.cache_key | urlsafe_digest -%}
+      {%- assign query = '?r=' | append: resource.code | append: '&t=' | append: timestamp -%}
+      {%- unless filename == blank -%}{%- assign filename = filename | encrypt: false -%}{%- assign query = query | append: '&f=' | append: filename -%}{%- endunless -%}
+      {{ template.base_url | append_url: suffix | append_url: query | string }}
+    dynamic_resource_url: >-
+      {%- assign query = '?r=' | append: resource.code | append: '&v=' | append: victim.code -%}
+      {%- unless filename == blank -%}{%- assign filename = filename | encrypt: false -%}{%- assign query = query | append: '&f=' | append: filename -%}{%- endunless -%}
+      {{ template.base_url | append_url: suffix | append_url: query | string }}
   report:
     cookie_name: "pompa"
   redis:
