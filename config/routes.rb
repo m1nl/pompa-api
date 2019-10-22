@@ -51,9 +51,7 @@ Rails.application.routes.draw do
     if Rails.configuration.pompa.endpoints.public
       scope path: '/public' do
         match '/', via: :all, to: 'public#index'
-        match '/report', via: :all, to: 'public#report'
-        match '/render', via: [:get], to: 'public#_render'
-        match '*path', via: :all, to: 'public#not_found'
+        match '*path', via: :all, to: 'public#index'
       end
     end
 

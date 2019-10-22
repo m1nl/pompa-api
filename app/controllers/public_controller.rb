@@ -54,15 +54,14 @@ class PublicController < ApplicationController
 
   # ANY /public/
   def index
-    return report if [:goal, :g].any? { |p|
+    return _report if [:goal, :g].any? { |p|
       params.has_key?(p) }
     return _render if request.get? && [:resource, :r].any? { |p|
       params.has_key?(p) }
     return head :not_found
   end
 
-  # ANY /public/report
-  def report
+  def _report
     victim_code = params[:victim] || params[:v]
     goal_code = params[:goal] || params[:g]
     return head :not_found if victim_code.blank? || goal_code.blank?
@@ -118,7 +117,6 @@ class PublicController < ApplicationController
     end
   end
 
-  # GET /public/render
   def _render
     victim_code = params[:victim] || params[:v]
     timestamp = params[:timestamp] || params[:t]
