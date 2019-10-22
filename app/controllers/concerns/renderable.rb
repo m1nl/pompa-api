@@ -140,7 +140,7 @@ module Renderable
 
         return result if !params.is_a?(Hash)
 
-        params.slice(*model_associations).keys.each do |k|
+        params.slice(*model_associations).each_key do |k|
           key = k.to_s
 
           association = self.model.reflections[key]
@@ -179,7 +179,7 @@ module Renderable
 
         return result if !params.is_a?(Hash)
 
-        params.slice(*model_associations).keys.each do |k|
+        params.slice(*model_associations).each_key do |k|
           key = k.to_s.dup
 
           negate = key.starts_with?('!')
