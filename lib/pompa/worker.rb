@@ -231,7 +231,7 @@ module Pompa
       end
 
       def redis
-        @redis ||= Pompa::RedisConnection.common_pool
+        @redis ||= Pompa::RedisConnection.pool
       end
 
       def message_queue

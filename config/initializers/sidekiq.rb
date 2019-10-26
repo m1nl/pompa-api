@@ -1,7 +1,7 @@
 require 'pompa/redis_connection'
 
 Sidekiq.configure_client do |config|
-  config.redis = Pompa::RedisConnection.common_pool
+  config.redis = Pompa::RedisConnection.pool
 end
 
 Sidekiq.configure_server do |config|
@@ -19,5 +19,5 @@ Sidekiq.configure_server do |config|
   end
 
   Pompa::RedisConnection.pool_size = Sidekiq.options[:concurrency] + 5
-  config.redis = Pompa::RedisConnection.common_pool
+  config.redis = Pompa::RedisConnection.pool
 end

@@ -1,7 +1,7 @@
 redis_default: &redis_default
   driver: hiredis
   pool_size: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  url: "unix:///var/run/redis/redis-server.sock"
+  url: "<%= ENV.fetch('POMPA_REDIS_URL') { 'unix:///var/run/redis/redis-server.sock' } %>"
   db:
     global: 0
     cache: 10
@@ -41,12 +41,13 @@ default: &default
     victim_batch_size: 3
     error_threshold: 6
     respawn_interval: 300
+    public_redis_db: global
   victim:
     email_timeout: 300
     retry_threshold: 5
     expose_header: "X-Victim-Code"
   template:
-    base_url: "http://localhost:3000/api/public/"
+    base_url: "<%= ENV.fetch('POMPA_BASE_URL') { 'http://localhost:3000/api/public/' } %>"
     report_url: >-
       {%- assign query = '?g=' | append: goal.code | append: '&v=' | append: victim.code -%}
       {%- unless location == blank -%}{%- assign location = location | encrypt: true -%}{%- assign query = query | append: '&l=' | append: location -%}{%- endunless -%}

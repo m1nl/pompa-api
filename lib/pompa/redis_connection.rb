@@ -5,16 +5,20 @@ require 'connection_pool'
 module Pompa
   class RedisConnection
     class << self
+      GLOBAL_DB = :global
       SYMBOLIZE_VALUES_FOR = [:driver, :role].freeze
 
       def pool(opts = {})
-        opts[:size] ||= pool_size
+        @pool ||= {}
 
-        ConnectionPool.new(size: opts[:size]) { Redis.new(config(opts)) }
-      end
+        db = opts.delete(:db) || GLOBAL_DB
+        db = db.to_sym
 
-      def common_pool(opts = {})
-        redis_common_pool
+        return @pool[db] if !@pool[db].nil?
+
+        config = config(opts).freeze
+
+        @pool[db] = ConnectionPool.new(size: pool_size) { Redis.new(config) }
       end
 
       def redis(opts = {})
@@ -25,7 +29,7 @@ module Pompa
         elsif !opts[:pool].nil?
           opts[:pool].with { |r| yield(r) }
         else
-          redis_common_pool.with { |r| yield(r) }
+          pool(opts).with { |r| yield(r) }
         end
       end
 
@@ -102,28 +106,35 @@ module Pompa
       def config(opts = {})
         @config ||= {}
 
-        db = opts.delete(:db) || :global
+        db = opts.delete(:db) || GLOBAL_DB
         db = db.to_sym
 
         return @config[db] if !@config[db].nil?
 
-        hash = Rails.configuration.pompa.redis.dup
+        config = Rails.configuration.pompa.redis.dup.to_h.symbolize_keys!
 
-        db_config = hash.delete(:db).to_h.symbolize_keys!
-        config = hash.to_h.symbolize_keys!
+        if config[:db].is_a?(Hash)
+          db_config = config.delete(:db).to_h.symbolize_keys!
+          config[:db] = db_config[db]
+          config[:db] ||= db_config[GLOBAL_DB]
+        end
 
-        config[:db] = db_config[db]
+        if config[:url].is_a?(Hash)
+          url_config = config.delete(:url).to_h.symbolize_keys!
+          config[:url] = url_config[db]
+          config[:url] ||= url_config[GLOBAL_DB]
+        end
 
-        symbol_values = config.extract!(*SYMBOLIZE_VALUES_FOR)
-          .transform_values!(&:to_sym)
+        config.merge!(config.extract!(*SYMBOLIZE_VALUES_FOR)
+          .transform_values!(&:to_sym))
 
-        @config[db] = config.merge(symbol_values)
+        @config[db] = config
       end
 
       def pool_size=(value)
         if !value.nil?
           @pool_size = value
-          @redis_common_pool = nil
+          @pool = nil
         end
 
         pool_size
@@ -132,10 +143,6 @@ module Pompa
       private
         def pool_size
           @pool_size ||= Rails.configuration.pompa.redis.pool_size
-        end
-
-        def redis_common_pool
-          @redis_common_pool ||= pool
         end
 
         def lock_manager(opts = {})

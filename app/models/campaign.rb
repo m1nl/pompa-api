@@ -91,6 +91,8 @@ class Campaign < ApplicationRecord
       ids = []
       key_name = event_queue_key_name(campaign_id)
 
+      opts[:db] ||= public_redis_db
+
       Pompa::RedisConnection.redis(opts) do |r|
         return ids unless r.llen(key_name) > 0
 
@@ -124,6 +126,10 @@ class Campaign < ApplicationRecord
 
     def batch_size
       @batch_size ||= Rails.configuration.pompa.batch_size
+    end
+
+    def public_redis_db
+      @public_redis_db ||= Rails.configuration.pompa.campaign.public_redis_db.to_sym
     end
 
     def event_queue_key_name(id)
