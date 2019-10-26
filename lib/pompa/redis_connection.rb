@@ -16,7 +16,7 @@ module Pompa
 
         return @pool[db] if !@pool[db].nil?
 
-        config = config(opts).freeze
+        config = config(opts.merge(:db => db)).freeze
 
         @pool[db] = ConnectionPool.new(size: pool_size) { Redis.new(config) }
       end
