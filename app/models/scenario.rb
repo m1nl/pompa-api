@@ -119,11 +119,11 @@ class Scenario < ApplicationRecord
     Enumerator.new do |y|
       header = Victim.summary_header
       header.concat(
-        template.goals.order(score: :desc, id: :asc).map { |g|
+        template.goals.order(score: :desc, id: :asc).flat_map { |g|
           CSV_COLUMNS.map { |p|
             "#{g.name.parameterize.underscore}_#{p.parameterize.underscore}"
           }
-        }.flatten
+        }
       )
       y << CSV.generate_line(header)
 
@@ -176,14 +176,15 @@ class Scenario < ApplicationRecord
       Victim.joins(:report).includes(:report).where(:scenario_id => id)
         .find_each(:batch_size => batch_size).lazy.map do |v|
         v.summary.concat(
-          v.report.goals.sort_by{ |g| [-g['score'], g['goal_id']] }.map { |g|
+          v.report.goals.sort_by{ |g| [-g['score'], g['goal_id']] }
+            .flat_map { |g|
             [g[COL_HIT],
              g[COL_REPORTED_DATE] ? Time.iso8601(g[COL_REPORTED_DATE]) : nil,
              g.dig(COL_DATA, COL_IP),
              g.dig(COL_DATA, COL_USER_AGENT),
              g.dig(COL_DATA, COL_COOKIE),
              g[COL_DATA] ? g[COL_DATA].to_json : '']
-          }.flatten
+          }
         )
       end
     end

@@ -180,7 +180,7 @@ module Renderable
         return result if !params.is_a?(Hash)
 
         params.slice(*model_associations).each_key do |k|
-          key = k.to_s.dup
+          key = k.to_s
 
           negate = key.starts_with?('!')
           key.slice!(0) if negate
@@ -295,7 +295,7 @@ module Renderable
 
       def model_associations
         @model_associations ||= model.reflect_on_all_associations
-          .map { |a| [a.name.to_sym, "!#{a.name}".to_sym] }.flatten
+          .flat_map { |a| [a.name.to_sym, "!#{a.name}".to_sym] }
       end
     end
 
