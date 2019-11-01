@@ -22,7 +22,7 @@ module Pompa
       def urlsafe_digest(value)
         sha1 = Digest::SHA1.new
         sha1 << value
-        Base64.urlsafe_encode64(sha1.digest).gsub('=', '')[0, code_length]
+        Base64.urlsafe_encode64(sha1.digest, padding: false)[0, code_length]
       end
 
       def code_length
@@ -88,16 +88,16 @@ module Pompa
         box = RbNaCl::SimpleBox::from_secret_key(encryption_key)
 
         encrypted = box.encrypt(input)
-        return Base64.urlsafe_encode64(encrypted).gsub('=', '')
+        return Base64.urlsafe_encode64(encrypted, padding: false)
       end
 
       def decrypt(input, decompress = false)
-        decoded = Base64.decode64(input.tr('-_', '+/'))
+        decoded = Base64.urlsafe_decode64(input)
 
         box = RbNaCl::SimpleBox::from_secret_key(encryption_key)
 
         plaintext = box.decrypt(decoded)
-        decompress ? Zlib::Inflate.new.inflate(plaintext) : plaintext
+        return decompress ? Zlib::Inflate.new.inflate(plaintext) : plaintext
       end
 
       private

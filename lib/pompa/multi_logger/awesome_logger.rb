@@ -58,10 +58,15 @@ module Pompa
 
       private
         def prepare(message, opts)
-          message = Array(message)
-          message.map { |x|
-            x.is_a?(String) ? x : Pompa::Utils.truncate(x)
-              .ai(OPTIONS.merge(opts)) }.join
+          no_truncate = !!opts.delete(:no_truncate)
+          options = OPTIONS.merge(opts)
+
+          ( Array(message).map do |v|
+            next v if v.is_a?(String)
+
+            v = Pompa::Utils.truncate(v) unless no_truncate
+            v.ai(options)
+          end ).join
         end
 
         def logger

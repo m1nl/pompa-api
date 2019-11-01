@@ -6,7 +6,7 @@ module Pompa
     module Base64Filter
       def base64_encode(input, urlsafe = false)
           if urlsafe
-            Base64.urlsafe_encode64(input).gsub('=', '')
+            Base64.urlsafe_encode64(input, padding: false)
           else
             Base64.strict_encode64(input)
           end
@@ -15,7 +15,11 @@ module Pompa
       end
     
       def base64_decode(input, urlsafe = false)
-          Base64.decode64(urlsafe ? input.tr('-_', '+/') : input)
+          if urlsafe
+            Base64.urlsafe_decode64(input)
+          else
+            Base64.strict_decode64(input)
+          end
         rescue StandardError => e
           raise Liquid::ArgumentError.new(e.message)
       end
