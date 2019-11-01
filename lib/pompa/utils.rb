@@ -15,6 +15,10 @@ module Pompa
         SecureRandom.urlsafe_base64(code_length)
       end
 
+      def short_uuid
+        SecureRandom.uuid.gsub!('-', '')
+      end
+
       def uuid
         SecureRandom.uuid
       end

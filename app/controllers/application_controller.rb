@@ -4,6 +4,10 @@ class ApplicationController < ActionController::API
   include Pompa::MultiLogger
   include Authenticatable
 
+  if !Rails.configuration.pompa.authentication.enabled
+    skip_authentication!
+  end
+
   if Rails.env.production?
     rescue_from ActiveRecord::ConfigurationError, :with => :query_invalid
     rescue_from ActiveRecord::StatementInvalid, :with => :query_invalid

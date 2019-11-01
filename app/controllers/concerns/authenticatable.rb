@@ -9,7 +9,7 @@ module Authenticatable
 
   def bearer_token
     pattern = /^Bearer /
-    header  = request.headers['Authorization']
+    header = request.headers['Authorization']
     header.gsub(pattern, '') if header && header.match(pattern)
   end
 
@@ -19,13 +19,13 @@ module Authenticatable
 
   def authenticated_client_id
     authentication_token[:authenticated_client_id]
-  end  
+  end
 
   private
     def authenticate
       @authentication_token = {}
 
-      return true if skip_authentication
+      return true if skip_authentication?
       return true if skip_authentication_for.include?(action_name.to_sym)
 
       token = bearer_token
@@ -33,15 +33,15 @@ module Authenticatable
 
       begin
         payload = Pompa::Authentication::Token.parse_token(token)
-      rescue Pompa::Authentication::ValidationError
+      rescue Pompa::Authentication::AccessError
         return head :unauthorized
       end
 
       @authentication_token = payload
     end
 
-    def skip_authentication
-      self.class.skip_authentication
+    def skip_authentication?
+      self.class.skip_authentication?
     end
 
     def skip_authentication_for
@@ -49,18 +49,18 @@ module Authenticatable
     end
 
     module AuthenticatableClassMethods
-      def skip_authentication
-        return !!@skip_authentication
+      def skip_authentication?
+        !!@skip_authentication
       end
 
-      def skip_authentication=(value)
-        @skip_authentication = !!value
+      def skip_authentication!
+        @skip_authentication = true
       end
 
       def skip_authentication_for(*actions)
         @skip_authentication_for ||= []
         return @skip_authentication_for if actions.nil? || actions.empty?
- 
+
         @skip_authentication_for.push(*actions)
       end
     end

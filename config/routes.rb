@@ -54,6 +54,7 @@ Rails.application.routes.draw do
         post '/auth/callback', to: 'auth#callback'
         post '/auth/token', to: 'auth#token'
         post '/auth/refresh', to: 'auth#refresh'
+        post '/auth/revoke', to: 'auth#revoke'
       end
     end
 

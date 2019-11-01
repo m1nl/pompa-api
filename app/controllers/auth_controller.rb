@@ -3,14 +3,16 @@ class AuthController < ApplicationController
 
   rescue_from Pompa::Authentication::AuthenticationError,
     :with => :handle_error
-  rescue_from Pompa::Authentication::ValidationError,
+  rescue_from Pompa::Authentication::AccessError,
+    :with => :handle_error
+  rescue_from Pompa::Authentication::ManipulationError,
     :with => :handle_error
 
   skip_authentication_for :metadata, :init, :callback, :token
 
   # GET /auth
   def index
-    return render :json => { client_id: client_id }
+    return render :json => authentication_token
   end
 
   # GET /auth/metadata
@@ -69,13 +71,13 @@ class AuthController < ApplicationController
 
     url.query_values = (url.query_values || {}).merge(code: code)
 
-    return redirect_to url.to_s, status: :found
+    return redirect_to url.to_s, status: :see_other
   end
 
   # POST /auth/token
   def token
     return head :bad_request if [:code, :nonce].any? { |p|
-      !params[p].blank? }
+      params[p].blank? }
 
     code = params[:code]
     nonce = params[:nonce]
@@ -85,12 +87,20 @@ class AuthController < ApplicationController
     return head :forbidden if !payload[:authenticated] ||
       payload[:client_id].blank?
 
-    return render :json => { token: generate_token(payload[:client_id]) }
+    return render :json => { token:
+      Pompa::Authentication::Token.generate_token(payload[:client_id]) }
   end
 
   # POST /auth/refresh
   def refresh
-    return render :json => { token: refresh_token(bearer_token) }
+    return render :json => { token:
+      Pompa::Authentication::Token.refresh_token(bearer_token) }
+  end
+
+  # POST /auth/revoke
+  def revoke
+    Pompa::Authentication::Token.revoke_token(bearer_token)
+    return head :no_content
   end
 
   private
@@ -119,7 +129,7 @@ class AuthController < ApplicationController
 
       saml_settings.idp_cert = Rails.configuration
         .pompa.authentication.idp_cert
- 
+
       saml_settings.name_identifier_format = NAME_IDENTIFIER_FORMAT
 
       return saml_settings
