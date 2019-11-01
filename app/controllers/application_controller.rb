@@ -2,6 +2,7 @@ require 'pompa/multi_logger'
 
 class ApplicationController < ActionController::API
   include Pompa::MultiLogger
+  include Authenticatable
 
   if Rails.env.production?
     rescue_from ActiveRecord::ConfigurationError, :with => :query_invalid

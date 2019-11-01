@@ -117,6 +117,7 @@ GEM
     jaro_winkler (1.5.3)
     jaro_winkler (1.5.3-java)
     jsonapi-renderer (0.2.2)
+    jwt (2.2.1)
     kaminari (1.1.1)
       activesupport (>= 4.1.0)
       kaminari-actionview (= 1.1.1)
@@ -210,6 +211,8 @@ GEM
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 1.4.0, < 1.7)
     ruby-progressbar (1.10.1)
+    ruby-saml (1.11.0)
+      nokogiri (>= 1.5.10)
     rubyzip (2.0.0)
     sidekiq (6.0.3)
       connection_pool (>= 2.2.2)
@@ -269,6 +272,7 @@ DEPENDENCIES
   hashie
   hiredis
   http
+  jwt
   kaminari
   liquid
   listen (>= 3.0.5, < 3.3)
@@ -281,6 +285,7 @@ DEPENDENCIES
   rbnacl
   redis
   rubocop
+  ruby-saml
   rubyzip
   sidekiq
   spring

@@ -46,6 +46,15 @@ Rails.application.routes.draw do
 
       get '/workers/replies/:queue_id', to: 'workers#replies'
       get '/workers/files/:queue_id', to: 'workers#files'
+
+      if Rails.configuration.pompa.authentication.enabled
+        get '/auth', to: 'auth#index'
+        get '/auth/metadata', to: 'auth#metadata'
+        post '/auth/init', to: 'auth#init'
+        post '/auth/callback', to: 'auth#callback'
+        post '/auth/token', to: 'auth#token'
+        post '/auth/refresh', to: 'auth#refresh'
+      end
     end
 
     if Rails.configuration.pompa.endpoints.public
@@ -54,7 +63,6 @@ Rails.application.routes.draw do
         match '*path', via: :all, to: 'public#index'
       end
     end
-
 
     if Rails.configuration.pompa.endpoints.sidekiq_console
       require 'sidekiq/web'

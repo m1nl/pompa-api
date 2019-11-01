@@ -5,6 +5,8 @@ class PublicController < ApplicationController
   include ActionController::MimeResponds
   include ActionController::Cookies
 
+  skip_authentication
+
   rescue_from StandardError, :with => :handle_error if Rails.env.production?
 
   before_action :check_accept_header

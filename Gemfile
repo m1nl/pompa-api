@@ -30,6 +30,9 @@ gem 'concurrent-ruby'
 gem 'groupdate'
 gem 'oj'
 gem 'rbnacl'
+gem 'jwt'
+
+gem 'ruby-saml'
 
 gem 'paperclip' if ENV['ENABLE_PAPERCLIP']
 

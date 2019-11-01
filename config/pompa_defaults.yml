@@ -20,6 +20,8 @@ default: &default
     admin: true
     public: true
     sidekiq_console: false
+  authentication:
+    enabled: false
   model_cache:
     enable: true
     expire: 300
