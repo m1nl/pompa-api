@@ -163,6 +163,8 @@ GEM
       nio4r (~> 2.0)
     puma (4.3.0-java)
       nio4r (~> 2.0)
+    pundit (2.1.0)
+      activesupport (>= 3.0.0)
     rack (2.0.7)
     rack-cors (1.1.0)
       rack (>= 2.0.0)
@@ -281,6 +283,7 @@ DEPENDENCIES
   oj
   pg
   puma
+  pundit
   rack-cors
   rails (~> 6.0.0)
   rbnacl

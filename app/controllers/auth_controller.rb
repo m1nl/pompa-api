@@ -2,11 +2,11 @@ class AuthController < ApplicationController
   NAME_IDENTIFIER_FORMAT = 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'.freeze
 
   rescue_from Pompa::Authentication::AuthenticationError,
-    :with => :handle_error
+    :with => :forbidden_error
   rescue_from Pompa::Authentication::AccessError,
-    :with => :handle_error
+    :with => :forbidden_error
   rescue_from Pompa::Authentication::ManipulationError,
-    :with => :handle_error
+    :with => :forbidden_error
 
   skip_authentication_for :metadata, :init, :callback, :token
 
@@ -83,12 +83,16 @@ class AuthController < ApplicationController
     nonce = params[:nonce]
 
     payload = Pompa::Authentication::Token.validate(code, nonce)
-
     return head :forbidden if !payload[:authenticated] ||
       payload[:client_id].blank?
 
+    self.authenticated_client_id = payload[:client_id]
+    return head :forbidden if current_user.nil?
+
+    authorize :auth, :token?
+
     return render :json => { token:
-      Pompa::Authentication::Token.generate_token(payload[:client_id]) }
+      Pompa::Authentication::Token.generate_token(authenticated_client_id) }
   end
 
   # POST /auth/refresh
@@ -133,12 +137,5 @@ class AuthController < ApplicationController
       saml_settings.name_identifier_format = NAME_IDENTIFIER_FORMAT
 
       return saml_settings
-    end
-
-    def handle_error(e)
-      multi_logger.error{"Error in #{self.class.name}, #{e.class}: #{e.message}"}
-      multi_logger.backtrace(e)
-
-      return head :forbidden
     end
 end
