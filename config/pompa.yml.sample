@@ -23,6 +23,18 @@ default: &default
     admin: true
     public: true
     sidekiq_console: false
+  authentication: # SAML authentication configuration
+    enabled: false
+    authentication_timeout: 300 # SAML authentication process timeout
+    authentication_lifetime: 3600 # a single authentication lifetime before a token is invalidated (~maximum session duration)
+    access_timeout: 300 # token timeout (~session timeout)
+    token_refresh_margin: 90
+    idp_entity_id: "https://..."
+    idp_sso_target_url: "https://..."
+    idp_cert: |-
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
   model_cache: # whether to perform Redis caching of a data model
     enable: true
     expire: 300

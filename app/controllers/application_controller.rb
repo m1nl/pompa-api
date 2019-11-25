@@ -6,8 +6,8 @@ class ApplicationController < ActionController::API
   include Authenticatable
   include Pundit
 
-  if !Rails.configuration.pompa.authentication.enabled
-    skip_authentication!
+  if Rails.configuration.pompa.authentication.enabled
+    before_action :authenticate
   end
 
   if Rails.env.production?

@@ -6,8 +6,6 @@ module Authenticatable
 
   included do
     extend AuthenticatableClassMethods
-
-    before_action :authenticate
   end
 
   def authentication_token
