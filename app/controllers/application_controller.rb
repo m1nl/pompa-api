@@ -67,8 +67,8 @@ class ApplicationController < ActionController::API
       head :forbidden
 
       if !error.nil?
-        multi_logger.error{"Error in #{self.class.name}, #{e.class}: #{e.message}"}
-        multi_logger.backtrace(e)
+        multi_logger.error{"Error in #{self.class.name}, #{error.class}: #{error.message}"}
+        multi_logger.backtrace(error)
       end
     end
 end
