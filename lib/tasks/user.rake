@@ -70,7 +70,7 @@ namespace :user do
     end
 
     user = User.where(client_id: client_id).first
-    
+
     if user.nil?
       puts("User #{client_id} not found.")
       exit 1
