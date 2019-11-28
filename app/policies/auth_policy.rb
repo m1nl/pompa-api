@@ -1,5 +1,5 @@
 class AuthPolicy < ApplicationPolicy
   def token?
-    return true
+    @user.has_role?(User::Roles::AUTH)
   end
 end
