@@ -1,3 +1,5 @@
+require 'rake'
+
 namespace :pompa do
   desc "Migrate resources from Paperclip to ActiveStorage"
   task :migrate_from_paperclip => :environment do
