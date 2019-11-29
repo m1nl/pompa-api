@@ -25,14 +25,14 @@ namespace :user do
       exit 0
     end
 
+    args = parser.order!(ARGV) {}
+    parser.parse!(args)
+
     if options[:client_id].blank?
       puts 'Error: CLIENT_ID not given.'
       puts parser
       exit 1
     end
-
-    args = parser.order!(ARGV) {}
-    parser.parse!(args)
 
     User.create!(options)
 
