@@ -10,7 +10,8 @@ class PublicController < ApplicationController
   before_action :check_accept_header
   after_action :allow_iframe
   after_action :set_vary_header
-  after_action :skip_authorization
+
+  skip_authentication!
 
   PNG_CONTENT_TYPE = 'image/png'.freeze
   JPEG_CONTENT_TYPE = 'image/jpeg'.freeze
