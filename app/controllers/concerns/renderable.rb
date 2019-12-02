@@ -180,7 +180,7 @@ module Renderable
         return result if !params.is_a?(Hash)
 
         params.slice(*model_associations).each_key do |k|
-          key = k.to_s
+          key = k.to_s.dup
 
           negate = key.starts_with?('!')
           key.slice!(0) if negate
