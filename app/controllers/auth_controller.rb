@@ -136,6 +136,8 @@ class AuthController < ApplicationController
 
       saml_settings.name_identifier_format = NAME_IDENTIFIER_FORMAT
 
-      return saml_settings
+      @saml_settings = saml_settings
+
+      return @saml_settings
     end
 end
