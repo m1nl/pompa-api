@@ -19,7 +19,7 @@ require "rails/test_unit/railtie"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-module PompaApi
+module Pompa
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 6.0
@@ -49,6 +49,9 @@ module PompaApi
 
     # Include lib directory for extra classes
     config.autoload_paths << Rails.root.join('lib')
+
+    # Load support libraries
+    require "pompa"
 
     # Add cookie middleware
     config.middleware.use ActionDispatch::Cookies

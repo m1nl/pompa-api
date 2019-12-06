@@ -2,19 +2,15 @@ require 'pompa/multi_logger/awesome_logger'
 
 module Pompa
   module MultiLogger
-    def self.extended(base)
-      if base.is_a?(ActiveSupport::Logger)
-        @logger = base
-      elsif base.respond_to?(:logger)
-        @logger = base.send(:logger)
-      else
-        @logger = Rails.logger
-      end
+    def logger
+      return super if defined?(super)
+
+      @logger ||= self if self.is_a?(ActiveSupport::Logger)
+      @logger ||= Rails.logger
     end
 
     def multi_logger
-      @logger ||= send(:logger) || Rails.logger
-      @multi_logger ||= AwesomeLogger.new(@logger)
+      @multi_logger ||= AwesomeLogger.new(logger)
     end
 
     def backtrace(e)
