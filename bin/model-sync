@@ -2,6 +2,8 @@
 
 # frozen_string_literal: true
 
+$stdout.sync = true
+
 require_relative '../config/boot'
 require_relative '../config/environment'
 
