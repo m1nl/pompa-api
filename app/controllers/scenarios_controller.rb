@@ -53,7 +53,7 @@ class ScenariosController < ApplicationController
 
   # GET /scenarios/1/victims-summary
   def victims_summary
-    filename = "victims_summary_#{@scenario.id}_#{Time.current.to_i}#{CSV_EXTENSION}"
+    filename = "victims-summary-#{@scenario.id}-#{Time.current.to_i}#{CSV_EXTENSION}"
 
     response.headers[CONTENT_TYPE_HEADER] = CSV_CONTENT_TYPE
     response.headers[CONTENT_DISPOSITION_HEADER] =
