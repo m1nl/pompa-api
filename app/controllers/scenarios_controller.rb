@@ -10,6 +10,8 @@ class ScenariosController < ApplicationController
   CONTENT_DISPOSITION_HEADER = 'Content-Disposition'.freeze
   LAST_MODIFIED_HEADER = 'Last-Modified'.freeze
 
+  allow_temporary_token_for :victims_summary
+
   before_action :set_scenario, only: [:show, :update, :destroy, :victims_summary, :synchronize_group]
 
   # GET /scenarios

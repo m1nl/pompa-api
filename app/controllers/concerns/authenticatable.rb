@@ -3,6 +3,7 @@ module Authenticatable
 
   AUTHORIZATION = 'Authorization'.freeze
   BEARER_PATTERN = /^Bearer /.freeze
+  TOKEN_PARAM = :_token
 
   included do
     extend AuthenticatableClassMethods
@@ -16,7 +17,7 @@ module Authenticatable
     return @authenticated_client_id if !@authenticated_client_id.blank?
     return nil if !authentication_token.is_a?(Hash)
 
-    @authenticated_client_id = authentication_token[:authenticated_client_id]
+    @authenticated_client_id = authentication_token[:client_id]
   end
 
   def authenticated_client_id=(value)
@@ -37,12 +38,29 @@ module Authenticatable
     return current_user
   end
 
+  def authenticate_url(url)
+    return url if authenticated_client_id.blank? || url.blank?
+
+    uri = Addressable::URI.parse(url)
+
+    token = Pompa::Authentication::Token.generate_token(
+      authenticated_client_id, temporary: true, scopes: [uri.path])
+
+    query_values = uri.query_values || {}
+    uri.query_values = query_values.merge(TOKEN_PARAM => token)
+    return uri.to_s
+  end
+
   private
     def bearer_token
       header = request.headers[AUTHORIZATION]
 
       return nil if header.blank? || !header.match(BEARER_PATTERN)
       return header.gsub(BEARER_PATTERN, '')
+    end
+
+    def token_param
+      @token_param ||= params.extract!(TOKEN_PARAM).fetch(TOKEN_PARAM) {''}
     end
 
     def authenticate
@@ -53,12 +71,30 @@ module Authenticatable
       return true if skip_authentication_for.include?(action_name.to_sym)
 
       token = bearer_token
-      return head :unauthorized if token.blank?
+      allow_temporary = false
+
+      if token.blank?
+        return head :unauthorized if !allow_temporary_token_for
+          .include?(action_name.to_sym)
+
+        token = token_param
+        return head :unauthorized if token.blank?
+
+        allow_temporary = true
+      end
 
       begin
-        payload = Pompa::Authentication::Token.parse_token(token)
-      rescue Pompa::Authentication::AccessError
+        payload = Pompa::Authentication::Token.parse_token(token,
+          allow_temporary: allow_temporary)
+      rescue Pompa::Authentication::AccessError => e
         return head :unauthorized
+      end
+
+      scopes = payload[:scopes]
+
+      if !scopes.nil?
+        scopes = Array(scopes)
+        return head :unauthorized if !scopes.include?(request.path)
       end
 
       @authentication_token = payload
@@ -70,6 +106,10 @@ module Authenticatable
 
     def skip_authentication_for
       self.class.skip_authentication_for
+    end
+
+    def allow_temporary_token_for
+      self.class.allow_temporary_token_for
     end
 
     module AuthenticatableClassMethods
@@ -86,6 +126,13 @@ module Authenticatable
         return @skip_authentication_for if actions.nil? || actions.empty?
 
         @skip_authentication_for.push(*actions)
+      end
+
+      def allow_temporary_token_for(*actions)
+        @allow_temporary_token_for ||= []
+        return @allow_temporary_token_for if actions.nil? || actions.empty?
+
+        @allow_temporary_token_for.push(*actions)
       end
     end
 end

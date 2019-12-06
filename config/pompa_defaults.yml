@@ -22,6 +22,11 @@ default: &default
     sidekiq_console: false
   authentication:
     enabled: false
+    authentication_timeout: 300
+    authentication_lifetime: 3600
+    access_timeout: 300
+    temporary_access_timeout: 5
+    token_refresh_margin: 90
   model_cache:
     enable: true
     expire: 300

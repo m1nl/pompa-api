@@ -1,6 +1,8 @@
 class TemplatesController < ApplicationController
   include Renderable
 
+  allow_temporary_token_for :import
+
   before_action :set_template, only: [:show, :update, :destroy, :duplicate, :export]
 
   # GET /templates

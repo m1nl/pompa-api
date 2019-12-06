@@ -12,6 +12,7 @@ module Pompa
         JWT_ALGORITHM = 'ED25519'.freeze
         JWT_AUTHENTICATE_AUD = 'authentication_token@pompa'.freeze
         JWT_ACCESS_AUD = 'access_token@pompa'.freeze
+        JWT_TEMPORARY_ACCESS_AUD = 'temporary_access_token@pompa'.freeze
 
         def preauthenticate(code, params = {})
           nonce = Base64.urlsafe_encode64(RbNaCl::Random.random_bytes(
@@ -144,37 +145,61 @@ module Pompa
         ###
 
         def generate_token(client_id, params = {})
+          temporary = !!params.delete(:temporary)
+          scopes = params.delete(:scopes)
+
+          aud = if temporary then JWT_TEMPORARY_ACCESS_AUD else JWT_ACCESS_AUD end
+          timeout = if temporary then temporary_access_timeout else access_timeout end
+
           timestamp = Time.now
           payload = params.merge({ client_id: client_id, auth_time: timestamp.to_i,
-              iat: timestamp.to_i, exp: access_timeout.since(timestamp).to_i,
-              jti: Pompa::Utils.short_uuid, aud: JWT_ACCESS_AUD })
+              iat: timestamp.to_i, exp: timeout.since(timestamp).to_i,
+              jti: Pompa::Utils.short_uuid, aud: aud })
+
+          if !scopes.blank?
+            payload.merge!({ scopes: Array(scopes) })
+          end
+
           return JWT.encode(payload, signing_key, JWT_ALGORITHM)
         end
 
         def parse_token(token, opts = {})
-          allow_revoked = !!opts[:allow_revoked]
+          allow_revoked = !!opts.delete(:allow_revoked)
+          allow_temporary = !!opts.delete(:allow_temporary)
+
+          allowed_auds = [JWT_ACCESS_AUD]
+          allowed_auds << JWT_TEMPORARY_ACCESS_AUD if allow_temporary
+
           payload = nil
 
           begin
             decode_params = { algorithm: JWT_ALGORITHM, verify_iat: true,
-                verify_aud: true, aud: JWT_ACCESS_AUD, verify_jti: lambda {
-                  |jti| jti_valid?(jti, allow_revoked: allow_revoked) }}
+              verify_jti: lambda { |jti| jti_valid?(jti, allow_revoked: allow_revoked) }}
 
             payload = JWT.decode(token, verify_key, true, decode_params)
+
+            raise(AccessError,
+              'JWT parse error: payload is not an array') if payload.nil? ||
+                !payload.kind_of?(Array)
+
+            payload = payload[0]
+            raise(AccessError,
+              'JWT parse error: inner payload is not a hash') if payload.blank? ||
+                !payload.is_a?(Hash)
+
+            payload.symbolize_keys!
+
+            aud = payload[:aud]
+
+            if aud.blank? || !allowed_auds.include?(aud) then
+              raise(JWT::InvalidAudError,
+                "Invalid audience. Expected #{allowed_auds.join(', ')}, received #{aud || '<none>'}")
+            end
           rescue JWT::DecodeError => e
             raise(AccessError, "JWT parse error: #{e.message}")
           end
 
-          raise(AccessError,
-            'JWT parse error: payload is not an array') if payload.nil? ||
-              !payload.kind_of?(Array)
-
-          payload = payload[0]
-          raise(AccessError,
-            'JWT parse error: inner payload is not a hash') if payload.blank? ||
-              !payload.is_a?(Hash)
-
-          return payload.symbolize_keys!
+          return payload
         end
 
         def refresh_token(token)
@@ -198,7 +223,7 @@ module Pompa
         end
 
         def revoke_token(token)
-          payload = parse_token(token)
+          payload = parse_token(token, allow_temporary: true)
 
           raise(ManipulationError,
             'Token already revoked') if jti_revoked?(payload[:jti])
@@ -214,7 +239,8 @@ module Pompa
         end
 
         def token_revoked?(token)
-          payload = parse_token(token, allow_revoked: true)
+          payload = parse_token(token, allow_revoked: true,
+            allow_temporary: true)
 
           return jti_revoked?(payload.jti)
         end
@@ -247,6 +273,11 @@ module Pompa
         def access_timeout
           @access_timeout = Rails.configuration.pompa.authentication
             .access_timeout.seconds
+        end
+
+        def temporary_access_timeout
+          @access_timeout = Rails.configuration.pompa.authentication
+            .temporary_access_timeout.seconds
         end
 
         def token_refresh_margin

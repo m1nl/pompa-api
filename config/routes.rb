@@ -55,6 +55,7 @@ Rails.application.routes.draw do
         post '/auth/token', to: 'auth#token'
         post '/auth/refresh', to: 'auth#refresh'
         post '/auth/revoke', to: 'auth#revoke'
+        post '/auth/url', to: 'auth#url'
       end
     end
 

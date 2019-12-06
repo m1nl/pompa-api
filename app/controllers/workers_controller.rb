@@ -4,8 +4,9 @@ class WorkersController < ApplicationController
   include Renderable
 
   ATTACHMENT = 'attachment'.freeze
-
   QUANTUM = 1.seconds
+
+  allow_temporary_token_for :replies, :files
 
   before_action :set_worker, only: [:show]
 

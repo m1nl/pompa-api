@@ -107,6 +107,14 @@ class AuthController < ApplicationController
     return head :no_content
   end
 
+  # POST /auth/url
+  def url
+    return head :bad_request if params[:url].blank?
+
+    return render :json => { url:
+      authenticate_url(params[:url]) }
+  end
+
   private
     def saml_meta
       return @saml_meta if !@saml_meta.nil?
