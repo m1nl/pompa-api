@@ -29,10 +29,12 @@ module Authenticatable
     end
 
     @current_user ||= User.where(client_id: authenticated_client_id).first
-    return @current_user if @current_user.client_id == authenticated_client_id
 
-    @current_user = nil
-    return current_user
+    if @current_user.nil? || @current_user.client_id != authenticated_client_id
+      @current_user = nil
+    end
+
+    return @current_user
   end
 
   protected
