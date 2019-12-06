@@ -59,12 +59,6 @@ class TemplatesController < ApplicationController
     render_worker_request Template.import(hash[:file].path)
   end
 
-  protected
-    def record_not_unique(error)
-      render :json => { :errors => { :name => [NOT_UNIQUE] } },
-        :status => :unprocessable_entity
-    end
-
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_template

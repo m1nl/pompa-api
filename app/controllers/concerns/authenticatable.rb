@@ -1,13 +1,15 @@
 module Authenticatable
   extend ActiveSupport::Concern
 
+  included do
+    extend AuthenticatableClassMethods
+
+    include ErrorHandlers
+  end
+
   AUTHORIZATION = 'Authorization'.freeze
   BEARER_PATTERN = /^Bearer /.freeze
   TOKEN_PARAM = :_token
-
-  included do
-    extend AuthenticatableClassMethods
-  end
 
   def authentication_token
     @authentication_token
@@ -20,10 +22,6 @@ module Authenticatable
     @authenticated_client_id = authentication_token[:client_id]
   end
 
-  def authenticated_client_id=(value)
-    @authenticated_client_id = value
-  end
-
   def current_user
     if authenticated_client_id.blank?
       @current_user = nil
@@ -31,36 +29,28 @@ module Authenticatable
     end
 
     @current_user ||= User.where(client_id: authenticated_client_id).first
-
     return @current_user if @current_user.client_id == authenticated_client_id
 
     @current_user = nil
     return current_user
   end
 
-  def authenticate_url(url)
-    return url if authenticated_client_id.blank? || url.blank?
-
-    uri = Addressable::URI.parse(url)
-
-    token = Pompa::Authentication::Token.generate_token(
-      authenticated_client_id, temporary: true, scopes: [uri.path])
-
-    query_values = uri.query_values || {}
-    uri.query_values = query_values.merge(TOKEN_PARAM => token)
-    return uri.to_s
-  end
-
-  private
-    def bearer_token
-      header = request.headers[AUTHORIZATION]
-
-      return nil if header.blank? || !header.match(BEARER_PATTERN)
-      return header.gsub(BEARER_PATTERN, '')
+  protected
+    def authenticated_client_id=(value)
+      @authenticated_client_id = value
     end
 
-    def token_param
-      @token_param ||= params.extract!(TOKEN_PARAM).fetch(TOKEN_PARAM) {''}
+    def authenticate_url(url)
+      return url if authenticated_client_id.blank? || url.blank?
+
+      uri = Addressable::URI.parse(url)
+
+      token = Pompa::Authentication::Token.generate_token(
+        authenticated_client_id, temporary: true, scopes: [uri.path])
+
+      query_values = uri.query_values || {}
+      uri.query_values = query_values.merge(TOKEN_PARAM => token)
+      return uri.to_s
     end
 
     def authenticate
@@ -71,30 +61,30 @@ module Authenticatable
       return true if skip_authentication_for.include?(action_name.to_sym)
 
       token = bearer_token
-      allow_temporary = false
+      token_type = :access
 
       if token.blank?
-        return head :unauthorized if !allow_temporary_token_for
-          .include?(action_name.to_sym)
-
         token = token_param
-        return head :unauthorized if token.blank?
+        return unauthorized_error if token.blank?
 
-        allow_temporary = true
+        token_type = :temporary
       end
 
       begin
         payload = Pompa::Authentication::Token.parse_token(token,
-          allow_temporary: allow_temporary)
-      rescue Pompa::Authentication::AccessError => e
-        return head :unauthorized
+          allowed_types: token_type)
+      rescue Pompa::Authentication::Error => e
+        return unauthorized_error(e)
       end
+
+      return forbidden_error if token_type == :temporary &&
+        !allow_temporary_token_for.include?(action_name.to_sym)
 
       scopes = payload[:scopes]
 
       if !scopes.nil?
         scopes = Array(scopes)
-        return head :unauthorized if !scopes.include?(request.path)
+        return forbidden_error if !scopes.include?(request.path)
       end
 
       @authentication_token = payload
@@ -110,6 +100,18 @@ module Authenticatable
 
     def allow_temporary_token_for
       self.class.allow_temporary_token_for
+    end
+
+  private
+    def bearer_token
+      header = request.headers[AUTHORIZATION]
+
+      return nil if header.blank? || !header.match(BEARER_PATTERN)
+      return header.gsub(BEARER_PATTERN, '')
+    end
+
+    def token_param
+      @token_param ||= params.extract!(TOKEN_PARAM).fetch(TOKEN_PARAM) {''}
     end
 
     module AuthenticatableClassMethods

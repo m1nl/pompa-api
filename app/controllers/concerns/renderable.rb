@@ -11,14 +11,6 @@ module Renderable
   LOCATION = 'Location'.freeze
   DEFAULT_SORT = { :id => :asc }.freeze
 
-  def renderable_record_invalid(error = nil)
-    if !error.nil?
-      raise error if !error.respond_to?(:record)
-
-      render_errors error.record.errors, { status: :unprocessable_entity }
-    end
-  end
-
   protected
     def filter_collection(collection = [], opts = {})
       collection = collection.all if collection.respond_to?(:all)
@@ -117,6 +109,73 @@ module Renderable
       end
 
       render({ json: worker_response, include: include_params }.merge!(opts))
+    end
+
+    def renderable_record_invalid(error = nil)
+      if !error.nil?
+        raise error if !error.respond_to?(:record)
+
+        render_errors error.record.errors, { status: :unprocessable_entity }
+      end
+    end
+
+  private
+    def include_params
+      return {} if params[:include].blank?
+
+      Array(params.fetch(:include)).map { |p|
+        p.split('.').reverse.map(&:to_sym).inject({}) { |a, n| { n => a } }
+      }.reduce({}, :merge)
+    end
+
+    def join_params
+      return {} if params[:join].blank?
+
+      Array(params.fetch(:join)).map { |p|
+        p.split('.').reverse.map(&:to_sym).inject({}) { |a, n| { n => a } }
+      }.reduce({}, :merge)
+    end
+
+    def filter_params
+      return {} if params[:filter].blank?
+
+      Hash(params.fetch(:filter).to_unsafe_h)
+    end
+
+    def distinct_param
+      return false if params[:distinct].blank?
+
+      return !!params[:distinct]
+    end
+
+    def quicksearch_param
+      return if params[:quicksearch].blank?
+
+      params.fetch(:quicksearch)
+    end
+
+    def page_params
+      return if params[:page].blank?
+
+      params.fetch(:page).permit(:number, :size)
+    end
+
+    def sort_params
+      return [DEFAULT_SORT] if params[:sort].blank?
+
+      Array(params.fetch(:sort)).map do |p|
+        o = p.starts_with?('-') ? :desc : :asc
+        p.slice!(0) if o == :desc
+        p.split('.').reverse.map(&:to_sym).inject(o) { |a, n| { n => a } }
+      end
+    end
+
+    def page_details(collection)
+      {
+        total_count: collection.total_count,
+        total_pages: collection.total_pages,
+        current_page: collection.current_page,
+      }
     end
 
     module RenderableClassMethods
@@ -297,64 +356,5 @@ module Renderable
         @model_associations ||= model.reflect_on_all_associations
           .flat_map { |a| [a.name.to_sym, "!#{a.name}".to_sym] }
       end
-    end
-
-  private
-    def include_params
-      return {} if params[:include].blank?
-
-      Array(params.fetch(:include)).map { |p|
-        p.split('.').reverse.map(&:to_sym).inject({}) { |a, n| { n => a } }
-      }.reduce({}, :merge)
-    end
-
-    def join_params
-      return {} if params[:join].blank?
-
-      Array(params.fetch(:join)).map { |p|
-        p.split('.').reverse.map(&:to_sym).inject({}) { |a, n| { n => a } }
-      }.reduce({}, :merge)
-    end
-
-    def filter_params
-      return {} if params[:filter].blank?
-
-      Hash(params.fetch(:filter).to_unsafe_h)
-    end
-
-    def distinct_param
-      return false if params[:distinct].blank?
-
-      return !!params[:distinct]
-    end
-
-    def quicksearch_param
-      return if params[:quicksearch].blank?
-
-      params.fetch(:quicksearch)
-    end
-
-    def page_params
-      return if params[:page].blank?
-
-      params.fetch(:page).permit(:number, :size)
-    end
-
-    def sort_params
-      return [DEFAULT_SORT] if params[:sort].blank?
-
-      Array(params.fetch(:sort)).map do |p|
-        o = p.starts_with?('-') ? :desc : :asc
-        p.slice!(0) if o == :desc
-        p.split('.').reverse.map(&:to_sym).inject(o) { |a, n| { n => a } }
-      end
-    end
-
-    def page_details(collection)
-      {
-        total_count: collection.total_count,
-        total_pages: collection.total_pages,
-        current_page: collection.current_page,
-      }
     end
 end

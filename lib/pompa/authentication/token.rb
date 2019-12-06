@@ -10,9 +10,12 @@ module Pompa
         TIME_SHIFT = 10.seconds
 
         JWT_ALGORITHM = 'ED25519'.freeze
-        JWT_AUTHENTICATE_AUD = 'authentication_token@pompa'.freeze
         JWT_ACCESS_AUD = 'access_token@pompa'.freeze
+        JWT_AUTHENTICATE_AUD = 'authentication_token@pompa'.freeze
         JWT_TEMPORARY_ACCESS_AUD = 'temporary_access_token@pompa'.freeze
+
+        JWT_TYPE_AUD_MAPPING = { :any => [JWT_ACCESS_AUD, JWT_TEMPORARY_ACCESS_AUD],
+          :access => [JWT_ACCESS_AUD], :temporary => [JWT_TEMPORARY_ACCESS_AUD] }
 
         def preauthenticate(code, params = {})
           nonce = Base64.urlsafe_encode64(RbNaCl::Random.random_bytes(
@@ -164,11 +167,11 @@ module Pompa
         end
 
         def parse_token(token, opts = {})
+          allowed_types = opts.delete(:allowed_types) || :access
           allow_revoked = !!opts.delete(:allow_revoked)
-          allow_temporary = !!opts.delete(:allow_temporary)
 
-          allowed_auds = [JWT_ACCESS_AUD]
-          allowed_auds << JWT_TEMPORARY_ACCESS_AUD if allow_temporary
+          allowed_auds = Array(allowed_types)
+            .flat_map { |t| JWT_TYPE_AUD_MAPPING[t] }
 
           payload = nil
 
@@ -223,7 +226,7 @@ module Pompa
         end
 
         def revoke_token(token)
-          payload = parse_token(token, allow_temporary: true)
+          payload = parse_token(token, allowed_types: :any)
 
           raise(ManipulationError,
             'Token already revoked') if jti_revoked?(payload[:jti])
@@ -239,8 +242,8 @@ module Pompa
         end
 
         def token_revoked?(token)
-          payload = parse_token(token, allow_revoked: true,
-            allow_temporary: true)
+          payload = parse_token(token, allowed_types: :any,
+            allow_revoked: true)
 
           return jti_revoked?(payload.jti)
         end

@@ -55,12 +55,6 @@ class CampaignsController < ApplicationController
     render_worker_request @campaign.finish
   end
 
-  protected
-    def record_not_unique(error)
-      render :json => { :errors => { :name => [NOT_UNIQUE] } },
-        :status => :unprocessable_entity
-    end
-
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_campaign
