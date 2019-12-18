@@ -6,6 +6,7 @@ class ApplicationController < ActionController::API
 
   if Rails.configuration.pompa.authentication.enabled
     before_action :authenticate
+    around_action :add_current_user_log_tag
   end
 
   if Rails.env.production?

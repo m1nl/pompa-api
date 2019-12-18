@@ -21,6 +21,14 @@ class User < ApplicationRecord
     roles.include?(role)
   end
 
+  def display_name
+    "#{client_id}"
+  end
+
+  def to_s
+    "#{display_name}"
+  end
+
   private
     def normalize_roles
       roles ||= []

@@ -116,6 +116,15 @@ module Authenticatable
       @token_param ||= params.extract!(TOKEN_PARAM).fetch(TOKEN_PARAM) {''}
     end
 
+
+    def add_current_user_log_tag
+      return yield if current_user.nil?
+
+      logger.tagged(current_user.to_s) do
+        yield
+      end
+    end
+
     module AuthenticatableClassMethods
       def skip_authentication?
         !!@skip_authentication
