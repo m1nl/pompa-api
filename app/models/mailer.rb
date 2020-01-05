@@ -13,9 +13,11 @@ class Mailer < ApplicationRecord
 
   nullify_blanks :username, :password, :sender_email, :sender_name
 
-  attr_encrypted :password,
-    key: [Rails.application.secrets.database_key].pack('H*'),
-    algorithm: 'aes-256-gcm', mode: :per_attribute_iv
+  if !Rails.application.secrets.database_key.blank?
+    attr_encrypted :password,
+      key: [Rails.application.secrets.database_key].pack('H*'),
+      algorithm: 'aes-256-gcm', mode: :per_attribute_iv
+  end
 
   worker_auto start: true, spawn: true
 end
