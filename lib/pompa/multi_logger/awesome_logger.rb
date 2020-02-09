@@ -51,9 +51,12 @@ module Pompa
         logger.unknown(prepare(message, opts))
       end
 
-      def backtrace(e, severity = :error)
-        backtrace = Rails.backtrace_cleaner.clean(e.backtrace)
-        backtrace.each { |b| send(severity) {"\t#{b.red}"} }
+      def backtrace(o, severity = :error)
+        o = o.backtrace if o.is_a?(Exception)
+
+        Rails.backtrace_cleaner.clean(o).each do |b|
+          public_send(severity) {"\t#{b.red}"}
+        end
       end
 
       private

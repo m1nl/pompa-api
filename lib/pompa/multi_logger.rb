@@ -5,7 +5,7 @@ module Pompa
     def logger
       return super if defined?(super)
 
-      @logger ||= self if self.is_a?(ActiveSupport::Logger)
+      @logger ||= self if self.is_a?(::Logger)
       @logger ||= Rails.logger
     end
 
@@ -13,8 +13,8 @@ module Pompa
       @multi_logger ||= AwesomeLogger.new(logger)
     end
 
-    def backtrace(e)
-      multi_logger.backtrace(e)
+    def backtrace(o, severity = :error)
+      multi_logger.backtrace(o, severity)
     end
   end
 end
