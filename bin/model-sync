@@ -2,49 +2,19 @@
 
 # frozen_string_literal: true
 
-$stdout.sync = true
+require 'pathname'
 
-require_relative '../config/boot'
-require_relative '../config/environment'
+$LOAD_PATH.unshift Pathname.new('../lib').expand_path(File.dirname(__FILE__)).to_s
 
-def sanitize_pg_message(message)
-  message.sub(/\R+\s*/, '. ').gsub(/\R+\s*/, ' ').gsub(/\s*$/, '')
-end
-
-TAG = 'model-sync'
-RETRY_TIMEOUT = 5
-
-Signal.trap('INT') { raise Interrupt }
-Signal.trap('TERM') { raise Interrupt }
-
-return_value = 1
-
-Rails.application.eager_load!
-
-logger = Rails.logger.tap do |l|
-  l.push_tags(TAG)
-  l.extend(Pompa::MultiLogger)
-end
+require 'model_sync/cli'
 
 begin
-  Pompa::ModelSync.process
-rescue Interrupt
-  logger.info('Caught interrupt. Exiting...')
-  return_value = 0
-rescue PG::ConnectionBad => e
-  logger.error{"Error #{e.class}: #{sanitize_pg_message(e.message)}"}
-  logger.multi_logger.backtrace(e)
-  logger.error{"Retrying..."}
-  sleep RETRY_TIMEOUT
-  retry
-rescue PG::Error => e
-  logger.error{"Error #{e.class}: #{sanitize_pg_message(e.message)}"}
-  logger.multi_logger.backtrace(e)
-  logger.error{"Exiting..."}
-rescue StandardError => e
-  logger.error{"Error #{e.class}: #{e.message}."}
-  logger.multi_logger.backtrace(e)
-  logger.error{"Exiting..."}
+  cli = ModelSync::CLI.instance
+  cli.parse
+  cli.run
+rescue => e
+  raise e if $DEBUG
+  STDERR.puts(e.message)
+  STDERR.puts(e.backtrace.join("\n"))
+  exit 1
 end
-
-exit return_value
