@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 =begin LICENSE.txt
 
 Copyright (c) 2013 Francesco Laurita
@@ -25,8 +27,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class Redis
   class Queue
-    VERSION = '0.0.4+mnl1'.freeze
-    QUANTUM = 1.seconds
+    VERSION = '0.1.0+mnl1'.freeze
+    QUANTUM = 1
 
     def self.version
       "redis-queue version #{VERSION}"
@@ -40,6 +42,7 @@ class Redis
       @redis = options[:redis]
       @queue_name = queue_name
       @process_queue_name = process_queue_name
+      @last_message = nil
       @timeout = options[:timeout] || 0
     end
 
@@ -53,7 +56,7 @@ class Redis
     end
 
     def empty?
-      !(length > 0)
+      length <= 0
     end
 
     def push(obj)
@@ -64,7 +67,7 @@ class Redis
       timeout = @timeout if timeout.nil?
 
       if non_block
-        return @redis.rpoplpush(@queue_name, @process_queue_name)
+       @last_message = @redis.rpoplpush(@queue_name, @process_queue_name)
       else
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         result = nil
@@ -76,12 +79,13 @@ class Redis
           break if !result.nil? || (time - start) >= timeout
         end
 
-        return result
+        @last_message = result
       end
     end
 
-    def commit
-      @redis.ltrim(@process_queue_name, 1, -1)
+    def commit(message = nil)
+      @redis.lrem(@process_queue_name, 0, message || @last_message)
+      @last_message = nil
     end
 
     def process(non_block = false, timeout = nil)
@@ -95,16 +99,16 @@ class Redis
     end
 
     def refill
-      while message = @redis.rpop(@process_queue_name)
+      while (message = @redis.rpop(@process_queue_name))
         @redis.lpush(@queue_name, message)
       end
       true
     end
 
-    alias :size :length
-    alias :dec :pop
-    alias :shift :pop
-    alias :enc :push
-    alias :<< :push
+    alias size  length
+    alias dec   pop
+    alias shift pop
+    alias enc   push
+    alias <<    push
   end
 end
