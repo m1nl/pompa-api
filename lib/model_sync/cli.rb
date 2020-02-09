@@ -125,7 +125,19 @@ module ModelSync
         Rails.application.eager_load!
 
         if !$stdout.tty?
-          ModelSync.logger = Rails.logger
+          ModelSync.logger = Rails.logger.tap do |l|
+            formatter = l.formatter || ::Logger::Formatter.new
+
+            l.formatter = proc do |severity, time, program_name, message|
+              message = "[#{ModelSync.current_name}] #{message}" if !ModelSync
+                .current_name.blank?
+              message = "[TID-#{ModelSync.tid}] #{message}" if !ModelSync
+                .tid.blank?
+              message = "[#{ModelSync::TAG}] #{message}"
+
+              formatter.call(severity, time, program_name, message)
+            end
+          end
         end
 
         logger.info("Booted Rails #{Rails.version} application in #{environment} environment")
@@ -156,13 +168,13 @@ module ModelSync
             opts[:verbose] = arg
           end
         }
-  
+
         parser.banner = 'model-sync [options]'
         parser.on_tail('-h', '--help', 'Show help') do
           puts parser
           exit(1)
         end
-  
+
         parser
       end
 
