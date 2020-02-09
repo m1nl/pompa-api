@@ -48,7 +48,7 @@ module Pompa
 
       @message_queue = Redis::Queue.new(message_queue_key_name,
         message_process_queue_key_name, :redis => Pompa::RedisConnection.get,
-        :timeout => queue_timeout)
+        :timeout => queue_timeout, :single => true)
 
       logger.info("Bound to #{message_queue_key_name}" +
         " with #{queue_timeout}s timeout")

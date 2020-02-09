@@ -44,6 +44,7 @@ class Redis
       @process_queue_name = process_queue_name
       @last_message = nil
       @timeout = options[:timeout] || 0
+      @single = !!options[:single]
     end
 
     def length
@@ -84,7 +85,12 @@ class Redis
     end
 
     def commit(message = nil)
-      @redis.lrem(@process_queue_name, 0, message || @last_message)
+      if @single
+        @redis.ltrim(@process_queue_name, 1, -1)
+      else
+        @redis.lrem(@process_queue_name, 0, message || @last_message)
+      end
+
       @last_message = nil
     end
 
