@@ -97,24 +97,30 @@ module ModelSync
           raise(ModelSync::UnsupportedDatabaseError, 'Only PostgreSQL database backend is supported')
         end
 
-        socket_descriptor = @connection.socket
-        @socket = Socket.for_fd(socket_descriptor)
-
         begin
-          @socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_KEEPALIVE, 1)
+          io = @connection.socket_io
 
-          if @socket.local_address.ip?
-            logger.info('Tuning database socket TCP keepalive settings')
-
-            @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_KEEPCNT, TCP_KEEPCNT)
-            @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_KEEPINTVL, TCP_KEEPINTVL)
-            @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_KEEPIDLE, TCP_KEEPIDLE)
-          end
-
+          @socket = Socket.for_fd(io.to_i)
           @socket.autoclose = true
-         rescue StandardError => e
-          logger.warn('Exception trying to tune database socket keepalive settings')
-          logger.backtrace(e, :warn)
+        rescue StandardError
+          logger.warn('Unable to create Ruby socket for database connection')
+        end
+
+        if !@socket.nil?
+          begin
+            @socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_KEEPALIVE, 1)
+
+            if @socket.local_address.ip?
+              logger.info('Tuning database socket TCP keepalive settings')
+
+              @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_KEEPCNT, TCP_KEEPCNT)
+              @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_KEEPINTVL, TCP_KEEPINTVL)
+              @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_KEEPIDLE, TCP_KEEPIDLE)
+            end
+          rescue StandardError => e
+            logger.warn('Exception trying to tune database socket keepalive settings')
+            logger.backtrace(e, :warn)
+          end
         end
       end
 
