@@ -4,26 +4,24 @@ module ModelSync
   class Producer
     NAME = 'producer'
 
+    TCP_KEEPCNT = 5
+    TCP_KEEPINTVL = 2
+    TCP_KEEPIDLE = 2
+
     def initialize
       @done = false
       @mutex = Mutex.new
+
+      @connection = nil
+      @socket = nil
     end
 
     def run
       @mutex.synchronize do
         stop if alive?
+        setup_connection
 
-        @connection = ActiveRecord::Base.connection_pool.checkout.tap do |c|
-          ActiveRecord::Base.connection_pool.remove(c)
-        end
-
-        @connection = @connection.raw_connection
-
-        if !@connection.is_a?(PG::Connection)
-          raise(ModelSync::UnsupportedDatabaseError, 'Only PostgreSQL database backend is supported')
-        end
-
-        @thread = Thread.new do 
+        @thread = Thread.new do
           Thread.current[:name] = NAME
           producer_thread
         rescue Exception => e
@@ -35,18 +33,15 @@ module ModelSync
     end
 
     def stop
-      @mutex.synchronize do 
+      @mutex.synchronize do
         @done = true
 
         if alive?
           if block_given? then yield else sleep ModelSync::Timeout end
-
           @thread.raise Interrupt if alive?
         end
 
-        if !@connection.nil?
-          begin @connection.disconnect! rescue StandardError end
-        end
+        close_connection
 
         ensure
           @thread = nil
@@ -77,6 +72,48 @@ module ModelSync
 
       def sanitize_pg_message(message)
         message.sub(/\R+\s*/, '. ').gsub(/\R+\s*/, ' ').gsub(/\s*$/, '')
+      end
+
+      def close_connection
+        ( @connection.close rescue StandardError ) if !@connection.nil?
+        ( @socket.close rescue StandardError ) if !@socket.nil?
+
+        @connection = nil
+        @socket = nil
+     end
+
+      def setup_connection
+        close_connection
+
+        @connection = ActiveRecord::Base.connection_pool.checkout.tap do |c|
+          ActiveRecord::Base.connection_pool.remove(c)
+        end
+
+        @connection = @connection.raw_connection
+
+        if !@connection.is_a?(PG::Connection)
+          raise(ModelSync::UnsupportedDatabaseError, 'Only PostgreSQL database backend is supported')
+        end
+
+        socket_descriptor = @connection.socket
+        @socket = Socket.for_fd(socket_descriptor)
+
+        begin
+          @socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_KEEPALIVE, 1)
+
+          if @socket.local_address.protocol == Socket::IPPROTO_TCP
+            logger.info('Tuning database socket TCP keepalive settings')
+
+            @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_KEEPCNT, TCP_KEEPCNT)
+            @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_KEEPINTVL, TCP_KEEPINTVL)
+            @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_KEEPIDLE, TCP_KEEPIDLE)
+          end
+
+          @socket.autoclose = true
+         rescue StandardError => e
+          logger.warn('Exception trying to tune database socket keepalive settings')
+          logger.backtrace(e, :warn)
+        end
       end
 
       def producer_thread
@@ -131,7 +168,7 @@ module ModelSync
 
               next if !ModelSync::OPERATIONS.include?(operation)
               next if instance_id == 0
-         
+
               hash = { operation: operation, model_name: model_name,
                 instance_id: instance_id }
 
