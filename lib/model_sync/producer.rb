@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'socket'
+
 module ModelSync
   class Producer
     NAME = 'producer'
@@ -101,7 +103,7 @@ module ModelSync
         begin
           @socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_KEEPALIVE, 1)
 
-          if @socket.local_address.protocol == Socket::IPPROTO_TCP
+          if @socket.local_address.ip?
             logger.info('Tuning database socket TCP keepalive settings')
 
             @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_KEEPCNT, TCP_KEEPCNT)
