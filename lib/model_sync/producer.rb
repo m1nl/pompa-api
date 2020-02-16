@@ -136,9 +136,11 @@ module ModelSync
 
           @lock = Pompa::RedisConnection.lock(ModelSync::PRODUCER_LOCK,
             ModelSync::TIMEOUT)
-          raise Interrupt if done?
 
+          raise Interrupt if done?
           break if !@lock.nil?
+
+          @connection.query(KEEPALIVE_QUERY)
 
           rescue Redlock::LockError
         end
