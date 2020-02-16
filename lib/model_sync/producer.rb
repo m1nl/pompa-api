@@ -10,6 +10,8 @@ module ModelSync
     TCP_KEEPINTVL = 2
     TCP_KEEPIDLE = 2
 
+    KEEPALIVE_QUERY = 'SELECT 1'
+
     def initialize
       @done = false
       @mutex = Mutex.new
@@ -191,7 +193,10 @@ module ModelSync
 
           break if done?
 
-          message_queue.refill if channel_processed.blank?
+          if channel_processed.blank?
+            @connection.query(KEEPALIVE_QUERY)
+            message_queue.refill
+          end
         end
       rescue Interrupt
       rescue Redis::CannotConnectError => e
