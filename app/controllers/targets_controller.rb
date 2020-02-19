@@ -3,6 +3,8 @@ require 'csv'
 class TargetsController < ApplicationController
   include Renderable
 
+  allow_temporary_token_for :upload
+
   before_action :set_target, only: [:show, :update, :destroy]
 
   # GET /targets
