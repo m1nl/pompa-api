@@ -36,6 +36,7 @@ Rails.application.routes.draw do
       post '/campaigns/:id/finish', to: 'campaigns#finish'
 
       get '/resources/:id/download', to: 'resources#download'
+      get '/resources/:id/filename', to: 'resources#filename'
       match '/resources/:id/upload', via: [:post, :put], to: 'resources#upload'
 
       post '/templates/:id/duplicate', to: 'templates#duplicate'

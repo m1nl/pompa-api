@@ -7,7 +7,9 @@ class ResourcesController < ApplicationController
   CONTENT_DISPOSITION_HEADER = 'Content-Disposition'.freeze
   LAST_MODIFIED_HEADER = 'Last-Modified'.freeze
 
-  before_action :set_resource, only: [:show, :update, :destroy, :download, :upload]
+  allow_temporary_token_for :upload, :download
+
+  before_action :set_resource, only: [:show, :update, :destroy, :download, :filename, :upload]
 
   # GET /resources
   def index
@@ -68,6 +70,21 @@ class ResourcesController < ApplicationController
     self.status = :ok
     self.response_body = Resource::ContentWrapper.new(@resource,
       :error_handler => method(:handle_streaming_error))
+  end
+
+  # GET /resources/1/filename
+  def filename
+    filename = ""
+
+    if @resource.type == Resource::FILE
+      filename = @resource.file.filename.sanitized
+    end
+
+    if filename.blank?
+      filename = "resource_#{@resource.id}#{@resource.real_extension}"
+    end
+
+    return render :json => { filename: filename }
   end
 
   # POST /resources/1/upload
