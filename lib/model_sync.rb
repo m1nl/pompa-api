@@ -43,10 +43,7 @@ module ModelSync
 
   def self.logger
     @logger ||= ::Logger.new(STDOUT, level: ::Logger::INFO).tap do |l|
-      l.formatter = proc do |severity, time, program_name, message|
-        "#{time.utc.iso8601(3)} pid=#{pid} tid=#{tid} name=#{current_name} #{severity}: #{message}\n"
-      end
-
+      l.formatter = ModelSync::LogFormatter.new
       l.extend(Pompa::MultiLogger)
     end
   end
