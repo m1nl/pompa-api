@@ -1,8 +1,13 @@
 # frozen_string_literal: true
 
+require "logger"
+require "active_support/logger"
+
 module ModelSync
   class TaggedLogFormatter
-    def initialize(formatter)
+    include ActiveSupport::TaggedLogging::Formatter
+
+    def initialize(formatter = nil)
       @formatter = formatter || ::Logger::Formatter.new
     end
 
