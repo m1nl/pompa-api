@@ -37,6 +37,24 @@ module Pompa
         { strict_variables: true, strict_filters: true }
       end
 
+      def shared_tmpdir
+        return @shared_tmpdir if !@shared_tmpdir.blank?
+
+        [ENV['SHARED_TMPDIR'], ENV['SHARED_TMP'], ENV['SHARED_TEMP']].each do |d|
+          next if d.blank?
+
+          d = File.expand_path(d)
+          if stat = File.stat(d) and stat.directory? and stat.writable? and
+            (!stat.world_writable? or stat.sticky?)
+            @shared_tmpdir = d
+            break
+          end rescue nil
+        end
+
+        @shared_tmpdir = Dir.tmpdir if @shared_tmpdir.blank?
+        @shared_tmpdir
+      end
+
       def truncate(value)
         if value.is_a?(Hash)
           value.transform_values { |x| truncate(x) }

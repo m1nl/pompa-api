@@ -53,7 +53,7 @@ class TemplateExportJob < ApplicationJob
 
       return zip_file_response if !zip_path.blank? && File.file?(zip_path)
 
-      self.zip_path = File.join(Dir.tmpdir,
+      self.zip_path = File.join(Pompa::Utils.shared_tmpdir,
         "#{TEMPLATE}-#{Pompa::Utils.uuid}.#{ZIP}")
 
       Dir.mktmpdir do |dir|
