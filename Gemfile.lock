@@ -155,7 +155,7 @@ GEM
     nokogiri (1.10.8-java)
     oj (3.10.2)
     parallel (1.19.1)
-    parser (2.7.0.2)
+    parser (2.7.0.3)
       ast (~> 2.4.0)
     pg (1.2.2)
     public_suffix (4.0.3)
