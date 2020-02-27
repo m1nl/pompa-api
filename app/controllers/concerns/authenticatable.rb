@@ -104,6 +104,14 @@ module Authenticatable
       self.class.allow_temporary_token_for
     end
 
+    def add_current_user_log_tag
+      return yield if current_user.nil?
+
+      logger.tagged(current_user.to_s) do
+        yield
+      end
+    end
+
   private
     def bearer_token
       header = request.headers[AUTHORIZATION]
@@ -114,15 +122,6 @@ module Authenticatable
 
     def token_param
       @token_param ||= params.extract!(TOKEN_PARAM).fetch(TOKEN_PARAM) {''}
-    end
-
-
-    def add_current_user_log_tag
-      return yield if current_user.nil?
-
-      logger.tagged(current_user.to_s) do
-        yield
-      end
     end
 
     module AuthenticatableClassMethods
