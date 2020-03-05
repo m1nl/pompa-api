@@ -18,6 +18,7 @@ module ModelSync
 
       @connection = nil
       @socket = nil
+      @lock = nil
     end
 
     def run
@@ -131,16 +132,16 @@ module ModelSync
         logger.info("Trying to acquire producer lock with resource name " +
           ModelSync::PRODUCER_LOCK)
 
+        @lock = nil
+
         loop do
           raise Interrupt if done?
 
-          @lock = Pompa::RedisConnection.lock(ModelSync::PRODUCER_LOCK,
-            ModelSync::TIMEOUT)
-
-          raise Interrupt if done?
-          break if !@lock.nil?
-
           @connection.query(KEEPALIVE_QUERY)
+
+          @lock = Pompa::RedisConnection.lock(ModelSync::PRODUCER_LOCK,
+            ModelSync::LOCK_TIMEOUT)
+          break
 
           rescue Redlock::LockError
         end
@@ -159,11 +160,10 @@ module ModelSync
         loop do
           break if done?
 
-          @lock = Pompa::RedisConnection.lock(ModelSync::PRODUCER_LOCK,
-            ModelSync::TIMEOUT, :lock_info => @lock)
-          break if done?
-
-          if @lock.nil?
+          begin
+            @lock = Pompa::RedisConnection.lock(ModelSync::PRODUCER_LOCK,
+              ModelSync::LOCK_TIMEOUT, :lock_info => @lock)
+          rescue Redlock::LockError
             logger.error("Unable to extend producer lock")
             break
           end
@@ -193,8 +193,6 @@ module ModelSync
             end
           end
 
-          break if done?
-
           if channel_processed.blank?
             @connection.query(KEEPALIVE_QUERY)
             message_queue.refill
@@ -211,10 +209,13 @@ module ModelSync
         logger.error{"Error #{e.class}: #{sanitize_pg_message(e.message)}"}
         logger.backtrace(e)
       ensure
-        Pompa::RedisConnection.unlock(ModelSync::PRODUCER_LOCK,
-          :lock_info => @lock) if !@lock.nil?
+        if !@lock.nil?
+          Pompa::RedisConnection.unlock(ModelSync::PRODUCER_LOCK,
+            :lock_info => @lock)
+          logger.info("Producer lock released")
 
-        logger.info("Producer lock released")
+          @lock = nil
+        end
 
         if !@connection.nil?
           begin @connection.async_exec('UNLISTEN *') rescue StandardError end

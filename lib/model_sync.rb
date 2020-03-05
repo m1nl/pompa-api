@@ -24,6 +24,7 @@ module ModelSync
   PRODUCER_LOCK = 'ModelSync:producer_lock'
 
   TIMEOUT = 5
+  LOCK_TIMEOUT = 10
 
   CREATE = 'create'
   DELETE = 'delete'
