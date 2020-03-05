@@ -20,4 +20,10 @@ class ApplicationController < ActionController::API
   rescue_from ActiveRecord::RecordInvalid, :with => :record_invalid
 
   rescue_from Pundit::NotAuthorizedError, :with => :forbidden_error
+
+  rescue_from ActionController::RoutingError, :with => :routing_error
+
+  def unmatched_route
+    routing_error
+  end
 end

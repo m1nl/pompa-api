@@ -51,6 +51,15 @@ module ErrorHandlers
       end
     end
 
+    def routing_error(error = nil)
+      head :not_found
+
+      if !error.nil?
+        multi_logger.error{"Error in #{self.class.name}, #{error.class}: #{error.message}"}
+        multi_logger.backtrace(error)
+      end
+    end
+
     def forbidden_error(error = nil)
       head :forbidden
 

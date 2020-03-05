@@ -73,4 +73,8 @@ Rails.application.routes.draw do
       mount Sidekiq::Web => '/sidekiq'
     end
   end
+
+  if Rails.env.production?
+    match '*unmatched', via: :all, to: 'application#unmatched_route'
+  end
 end
