@@ -30,7 +30,7 @@ module ModelSync
         @done = true
 
         if !@thread.nil? && @thread.alive?
-          if block_given? then yield else sleep ModelSync:TIMEOUT end
+          if block_given? then yield else sleep ModelSync::TIMEOUT end
 
           @thread.raise Interrupt if alive?
         end
@@ -137,6 +137,7 @@ module ModelSync
             logger.backtrace(e)
           end
         end
+
         rescue Interrupt
         rescue Redis::CannotConnectError => e
           logger.error{"Error #{e.class}: #{e.message}"}
