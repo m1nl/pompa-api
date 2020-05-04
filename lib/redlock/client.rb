@@ -55,9 +55,21 @@ module Redlock
     # +ttl+:: The time-to-live in ms for the lock.
     # +options+:: Hash of optional parameters
     #  * +extend+: A lock ("lock_info") to extend.
-    #  * +extend_only_if_life+: If +extend+ is given, only acquire lock if currently held
-    def lock(resource, ttl, options = {})
+    #  * +extend_only_if_locked+: Boolean, if +extend+ is given, only acquire lock if currently held
+    #  * +extend_only_if_life+: Deprecated, same as +extend_only_if_locked+
+    #  * +extend_life+: Deprecated, same as +extend_only_if_locked+
+    # +block+:: an optional block to be executed; after its execution, the lock (if successfully
+    # acquired) is automatically unlocked.
+    def lock(resource, ttl, options = {}, &block)
       lock_info = try_lock_instances(resource, ttl, options)
+      if options[:extend_only_if_life] && !Gem::Deprecate.skip
+        warn 'DEPRECATION WARNING: The `extend_only_if_life` option has been renamed `extend_only_if_locked`.'
+        options[:extend_only_if_locked] = options[:extend_only_if_life]
+      end
+      if options[:extend_life] && !Gem::Deprecate.skip
+        warn 'DEPRECATION WARNING: The `extend_life` option has been renamed `extend_only_if_locked`.'
+        options[:extend_only_if_locked] = options[:extend_life]
+      end
 
       if block_given?
         begin
@@ -81,11 +93,11 @@ module Redlock
     # Locks a resource, executing the received block only after successfully acquiring the lock,
     # and returning its return value as a result.
     # See Redlock::Client#lock for parameters.
-    def lock!(*args)
+    def lock!(resource, *args)
       fail 'No block passed' unless block_given?
 
-      lock(*args) do |lock_info|
-        raise LockError, 'failed to acquire lock' unless lock_info
+      lock(resource, *args) do |lock_info|
+        raise LockError, resource unless lock_info
         return yield
       end
     end
@@ -134,11 +146,22 @@ module Redlock
         end
       eos
 
+      module ConnectionPoolLike
+        def with
+          yield self
+        end
+      end
+
       def initialize(connection)
-        if connection.respond_to?(:client)
+        if connection.respond_to?(:with)
           @redis = connection
         else
-          @redis = Redis.new(connection)
+          if connection.respond_to?(:client)
+            @redis = connection
+          else
+            @redis = Redis.new(connection)
+          end
+          @redis.extend(ConnectionPoolLike)
         end
 
         load_scripts
@@ -146,7 +169,7 @@ module Redlock
 
       def lock(resource, val, ttl, allow_new_lock)
         recover_from_script_flush do
-          @redis.evalsha @lock_script_sha, keys: [resource], argv: [val, ttl, allow_new_lock]
+          @redis.with { |conn| conn.evalsha @lock_script_sha, keys: [resource], argv: [val, ttl, allow_new_lock] }
         end
       rescue Redis::BaseConnectionError
         false
@@ -154,15 +177,15 @@ module Redlock
 
       def unlock(resource, val)
         recover_from_script_flush do
-          @redis.evalsha @unlock_script_sha, keys: [resource], argv: [val]
+          @redis.with { |conn| conn.evalsha @unlock_script_sha, keys: [resource], argv: [val] }
         end
-      rescue StandardError
+      rescue
         # Nothing to do, unlocking is just a best-effort attempt.
       end
 
       def validity(resource, val)
         recover_from_script_flush do
-          @redis.evalsha @validity_script_sha, keys: [resource], argv: [val]
+          @redis.with { |conn| conn.evalsha @validity_script_sha, keys: [resource], argv: [val] }
         end
       rescue Redis::BaseConnectionError
         0
@@ -171,9 +194,9 @@ module Redlock
       private
 
       def load_scripts
-        @unlock_script_sha = @redis.script(:load, UNLOCK_SCRIPT)
-        @lock_script_sha = @redis.script(:load, LOCK_SCRIPT)
-        @validity_script_sha = @redis.script(:load, VALIDITY_SCRIPT)
+        @unlock_script_sha = @redis.with { |conn| conn.script(:load, UNLOCK_SCRIPT) }
+        @lock_script_sha = @redis.with { |conn| conn.script(:load, LOCK_SCRIPT) }
+        @validity_script_sha = @redis.with { |conn| conn.script(:load, VALIDITY_SCRIPT) }
       end
 
       def recover_from_script_flush
@@ -200,7 +223,7 @@ module Redlock
 
       tries.times do |attempt_number|
         # Wait a random delay before retrying.
-        sleep((@retry_delay + rand(@retry_jitter)).to_f / 1000) if attempt_number > 0
+        sleep(attempt_retry_delay(attempt_number)) if attempt_number > 0
 
         lock_info = lock_instances(resource, ttl, options)
         return lock_info if lock_info
@@ -209,9 +232,20 @@ module Redlock
       false
     end
 
+    def attempt_retry_delay(attempt_number)
+      retry_delay =
+        if @retry_delay.respond_to?(:call)
+          @retry_delay.call(attempt_number)
+        else
+          @retry_delay
+        end
+
+      (retry_delay + rand(@retry_jitter)).to_f / 1000
+    end
+
     def lock_instances(resource, ttl, options)
       value = (options[:extend] || { value: SecureRandom.uuid })[:value]
-      allow_new_lock = (options[:extend_life] || options[:extend_only_if_life]) ? 'no' : 'yes'
+      allow_new_lock = options[:extend_only_if_locked] ? 'no' : 'yes'
 
       locked, time_elapsed = timed do
         @servers.select { |s| s.lock(resource, value, ttl, allow_new_lock) }.size
