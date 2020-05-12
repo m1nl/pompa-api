@@ -114,8 +114,6 @@ GEM
       ffi-compiler (>= 1.0, < 2.0)
     i18n (1.8.2)
       concurrent-ruby (~> 1.0)
-    jaro_winkler (1.5.4)
-    jaro_winkler (1.5.4-java)
     jsonapi-renderer (0.2.2)
     jwt (2.2.1)
     kaminari (1.2.0)
@@ -207,8 +205,7 @@ GEM
       ffi
     redis (4.1.4)
     rexml (3.2.4)
-    rubocop (0.82.0)
-      jaro_winkler (~> 1.5.1)
+    rubocop (0.83.0)
       parallel (~> 1.10)
       parser (>= 2.7.0.1)
       rainbow (>= 2.2.2, < 4.0)
