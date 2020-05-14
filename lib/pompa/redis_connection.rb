@@ -61,7 +61,7 @@ module Pompa
         redis(opts) do |r|
           if already_locked
             lock_info = lock_manager.lock(lock_key, timeout.in_milliseconds,
-              extend: lock_info, extend_life: !!lock_info)
+              extend: lock_info)
           end
 
           if !lock_info
