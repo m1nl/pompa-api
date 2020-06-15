@@ -66,7 +66,7 @@ module Model
 
       if @cache_enable
         Pompa::RedisConnection.redis(opts) do |r|
-          return r.get(cached_key_name(id)) if r.exists(cached_key_name(id))
+          return r.get(cached_key_name(id)) if r.exists?(cached_key_name(id))
 
           opts[:model] = find_by_id(id)
           return nil if opts[:model].nil?

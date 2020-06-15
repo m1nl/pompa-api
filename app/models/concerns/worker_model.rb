@@ -179,7 +179,7 @@ module WorkerModel
       def worker_started?(instance_id, opts = {})
         with_worker_lock(opts.merge(:instance_id => instance_id)) do
           Pompa::RedisConnection.redis(opts) { |r|
-            r.exists(worker_started_key_name(instance_id)) ||
+            r.exists?(worker_started_key_name(instance_id)) ||
               worker_active?(instance_id, opts) }
         end
       end

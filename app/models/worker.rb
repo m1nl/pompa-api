@@ -42,7 +42,7 @@ class Worker
 
   def persisted?(opts = {})
     Pompa::RedisConnection.redis(opts) do |r|
-      r.exists(worker_key_name) &&
+      r.exists?(worker_key_name) &&
         r.sismember(worker_set_name, worker_key_name)
     end
   end
