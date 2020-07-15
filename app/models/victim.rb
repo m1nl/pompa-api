@@ -28,6 +28,8 @@ class Victim < ApplicationRecord
   ATTACHMENT = 'attachment'.freeze
   FILENAME = 'filename'.freeze
   TEMPLATE = 'template'.freeze
+  SENDER_EMAIL = 'sender_email'.freeze
+  SENDER_NAME = 'sender_name'.freeze
   SUBJECT = 'subject'.freeze
   PLAINTEXT = 'plaintext'.freeze
   HTML = 'html'.freeze
@@ -147,8 +149,8 @@ class Victim < ApplicationRecord
     headers[@expose_header] ||= code if !@expose_header.blank?
 
     return {
-      :sender_email => template.sender_email,
-      :sender_name => template.sender_name,
+      :sender_email => full_model.dig(TEMPLATE, SENDER_EMAIL),
+      :sender_name => full_model.dig(TEMPLATE, SENDER_NAME),
       :recipient_email => email,
       :recipient_name => display_name,
       :subject => full_model.dig(TEMPLATE, SUBJECT),

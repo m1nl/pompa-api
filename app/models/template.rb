@@ -10,6 +10,8 @@ class Template < ApplicationRecord
   CID_URI = 'cid:%s'.freeze
   TRACKING_TAG = '<img src="%s" alt="" width="1" height="1" />'.freeze
 
+  SENDER_EMAIL = 'sender_email'.freeze
+  SENDER_NAME = 'sender_name'.freeze
   BASE_URL = 'base_url'.freeze
   LANDING_URL = 'landing_url'.freeze
   SUBJECT = 'subject'.freeze
@@ -25,8 +27,6 @@ class Template < ApplicationRecord
   has_many :scenarios
 
   validates :name, presence: true
-  validates :sender_email,
-    format: { with: /@/, message: "provide a valid email" }, allow_blank: true
   validates :base_url, :url => { :allow_nil => true, :allow_blank => true }
 
   nullify_blanks :sender_email, :sender_name, :base_url, :landing_url,
@@ -39,6 +39,8 @@ class Template < ApplicationRecord
   liquid_template :dynamic_resource_url, default: Rails.configuration
       .pompa.template.dynamic_resource_url
 
+  liquid_template :sender_email
+  liquid_template :sender_name
   liquid_template :landing_url
   liquid_template :subject
   liquid_template :plaintext
@@ -65,6 +67,12 @@ class Template < ApplicationRecord
 
     flags = liquid_flags(model, opts)
 
+    model[name].merge!(
+        { SENDER_EMAIL => sender_email_template.render!(model, flags) }
+    )
+    model[name].merge!(
+        { SENDER_NAME => sender_name_template.render!(model, flags) }
+    )
     model[name].merge!(
         { LANDING_URL => landing_url_template.render!(model, flags) }
     )
