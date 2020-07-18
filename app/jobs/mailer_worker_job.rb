@@ -147,8 +147,10 @@ class MailerWorkerJob < WorkerJob
     end
 
     def generate_message_id(mail)
-      address = Mail::Address.new(mail[:sender_email] ||
-        model.sender_email || '')
+      sender_email = mail[:sender_email]
+      sender_email = model.sender_email if sender_email.blank?
+
+      address = Mail::Address.new(sender_email || '')
       return SecureRandom.uuid if address.domain.blank?
 
       "#{SecureRandom.uuid}@#{address.domain}"
@@ -173,10 +175,14 @@ class MailerWorkerJob < WorkerJob
       mail.smtp_envelope_to = address.address
 
       address = Mail::Address.new
-      address.address = raw_mail[:sender_email] ||
-        model.sender_email || ''
-      address.display_name = raw_mail[:sender_name] ||
-        model.sender_name || ''
+
+      sender_email = raw_mail[:sender_email]
+      sender_email = model.sender_email if sender_email.blank?
+      address.address = sender_email || ''
+
+      sender_name = raw_mail[:sender_name]
+      sender_name = model.sender_name if sender_name.blank?
+      address.display_name = sender_name || ''
 
       if address.address.blank?
         logger.error('No sender address specified - ignoring e-mail')
