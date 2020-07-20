@@ -287,8 +287,10 @@ class MailerWorkerJob < WorkerJob
           end
         end
 
+      Mailer.extra_headers.each { |k, v| mail.header[k.to_s] = v || '' }
+
       if headers.is_a?(Hash)
-        headers.each { |k, v| mail.header[k.to_s] = v }
+        headers.each { |k, v| mail.header[k.to_s] = v || '' }
       end
 
       mail.content_type = body_part.content_type

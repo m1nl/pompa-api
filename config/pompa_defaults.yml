@@ -43,6 +43,9 @@ default: &default
   mailer:
     idle_timeout: 180
     debug_email_content: false
+    extra_headers:
+      - name: "X-Phishing-Simulation"
+        value: 1
   campaign:
     sync_interval: 20
     victim_batch_size: 3

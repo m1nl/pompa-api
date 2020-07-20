@@ -25,6 +25,19 @@ class Mailer < ApplicationRecord
 
   worker_auto start: true, spawn: true
 
+  class << self
+    def extra_headers
+      @extra_headers if @extra_headers.nil?
+
+      @extra_headers = {}
+      Rails.configuration.pompa.mailer.extra_headers.each do |h|
+        @extra_headers[h.name] = h.value || ''
+      end
+
+      @extra_headers
+    end
+  end
+
   private
     def password_check
       return if !Rails.application.secrets.database_key.blank?

@@ -52,6 +52,9 @@ default: &default
   mailer: # parameters for mailer worker
     idle_timeout: 180 # number of seconds of the worker to be active in idle state
     debug_email_content: false # wheter to send email content to logs
+    extra_headers: # extra headers to include in every mail message
+      - name: "X-Phishing-Simulation"
+        value: 1
   campaign: # parameters for campaign worker
     sync_interval: 20 # how often Redis<->PostgreSQL event synchronization should occur (in seconds)
     victim_batch_size: 3 # how many victim worker jobs should be spawned at once
