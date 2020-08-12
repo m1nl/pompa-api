@@ -81,9 +81,9 @@ GEM
     case_transform (0.2)
       activesupport
     colorize (0.8.1)
-    concurrent-ruby (1.1.6)
-    concurrent-ruby-ext (1.1.6)
-      concurrent-ruby (= 1.1.6)
+    concurrent-ruby (1.1.7)
+    concurrent-ruby-ext (1.1.7)
+      concurrent-ruby (= 1.1.7)
     connection_pool (2.2.3)
     crass (1.0.6)
     domain_name (0.5.20190701)
