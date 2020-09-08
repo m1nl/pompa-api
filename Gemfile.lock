@@ -219,7 +219,7 @@ GEM
     ruby-saml (1.11.0)
       nokogiri (>= 1.5.10)
     rubyzip (2.3.0)
-    sidekiq (6.1.1)
+    sidekiq (6.1.2)
       connection_pool (>= 2.2.2)
       rack (~> 2.0)
       redis (>= 4.2.0)
