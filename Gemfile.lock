@@ -247,7 +247,7 @@ GEM
     unf_ext (0.0.7.7)
     unicode-display_width (1.7.0)
     uniform_notifier (1.13.0)
-    validate_url (1.0.11)
+    validate_url (1.0.12)
       activemodel (>= 3.0.0)
       public_suffix
     websocket-driver (0.7.3)
