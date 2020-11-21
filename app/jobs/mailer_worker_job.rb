@@ -32,6 +32,7 @@ class MailerWorkerJob < WorkerJob
   CONTENT_ID_HEADER = 'Content-ID'.freeze
   CONTENT_DISPOSITION_HEADER = 'Content-Disposition'.freeze
 
+  DEFAULT_PORT = 587
   SMTPS_PORT = 465
 
   MIN_QUEUE_TIMEOUT = 5.seconds
@@ -302,12 +303,14 @@ class MailerWorkerJob < WorkerJob
         mail.add_part(p)
       end
 
+      port = model.port || DEFAULT_PORT
+
       mail.delivery_method(:smtp, {
           :address => model.host,
-          :port => model.port,
+          :port => port,
           :user_name => model.username,
           :password => model.password,
-          :ssl => model.port == SMTPS_PORT,
+          :ssl => port == SMTPS_PORT,
           :authentication => PLAIN,
           :openssl_verify_mode => (NONE if model.ignore_certificate),
           :enable_starttls_auto => true

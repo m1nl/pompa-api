@@ -18,8 +18,6 @@ class Mailer < ApplicationRecord
 
   nullify_blanks :username, :password, :sender_email, :sender_name
 
-  default :port, 587
-
   if !Rails.application.secrets.database_key.blank?
     attr_encrypted :password,
       key: [Rails.application.secrets.database_key].pack('H*'),
