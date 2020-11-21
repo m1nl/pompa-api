@@ -8,9 +8,11 @@ class Mailer < ApplicationRecord
   SENT = 'sent'.freeze
 
   validates :name, :host, presence: true
-  validates :port, numericality: { only_integer: true, greater_than: 0 }
+  validates :port, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
   validates :sender_email,
     format: { with: /@/, message: 'provide a valid email' }, allow_blank: true
+  validates :per_minute, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
+  validates :burst, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
 
   validate :password_check
 
