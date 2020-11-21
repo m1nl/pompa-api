@@ -2,6 +2,7 @@ class Mailer < ApplicationRecord
   include WorkerModel
   include Pageable
   include NullifyBlanks
+  include Defaults
 
   QUEUED = 'queued'.freeze
   SENT = 'sent'.freeze
@@ -14,6 +15,8 @@ class Mailer < ApplicationRecord
   validate :password_check
 
   nullify_blanks :username, :password, :sender_email, :sender_name
+
+  default :port, 587
 
   if !Rails.application.secrets.database_key.blank?
     attr_encrypted :password,
