@@ -49,7 +49,9 @@ Rails.application.configure do
 
   # Configure bullet gem
   config.after_initialize do
-    Bullet.enable = true
-    Bullet.rails_logger = true
+    if defined?(Bullet)
+      Bullet.enable = true
+      Bullet.rails_logger = true
+    end
   end
 end

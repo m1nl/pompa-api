@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 6.0.3'
+gem 'rails', '~> 6.1.0'
 
 gem 'pg'
 gem 'redis'
@@ -30,6 +30,7 @@ gem 'concurrent-ruby'
 gem 'groupdate'
 gem 'oj'
 gem 'rbnacl'
+gem 'thread_safe'
 
 gem 'jwt'
 gem 'pundit'
@@ -40,10 +41,10 @@ gem 'paperclip' if ENV['ENABLE_PAPERCLIP']
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
-  # Use bullet to optimize N+1 queries
-  gem 'bullet'
   # Use rubocop for static code analysis
   gem 'rubocop'
+  # Use bullet to optimize N+1 queries
+  #gem 'bullet'
 end
 
 group :development do
