@@ -152,7 +152,7 @@ GEM
     nokogiri (1.10.10)
       mini_portile2 (~> 2.4.0)
     nokogiri (1.10.10-java)
-    oj (3.10.17)
+    oj (3.10.18)
     parallel (1.20.1)
     parser (2.7.2.0)
       ast (~> 2.4.1)
