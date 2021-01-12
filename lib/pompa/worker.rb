@@ -423,7 +423,7 @@ module Pompa
       ###
 
       def cancelled?
-        redis.with { |r| r.exists(cancel_key_name) }
+        redis.with { |r| r.exists?(cancel_key_name) }
       end
 
       def discarded?
@@ -431,7 +431,7 @@ module Pompa
       end
 
       def resync_required?
-        redis.with { |r| r.exists(resync_key_name) }
+        redis.with { |r| r.exists?(resync_key_name) }
       end
 
       def refill_required?
