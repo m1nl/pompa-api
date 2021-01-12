@@ -11,11 +11,11 @@ Sidekiq.configure_server do |config|
   ActiveRecord::Base.connection_pool.disconnect!
 
   ActiveSupport.on_load(:active_record) do
-    active_record_config = ActiveRecord::Base.configurations[Rails.env] ||
-      Rails.application.config.database_configuration[Rails.env]
+    active_record_config = (ActiveRecord::Base.configurations[Rails.env] ||
+      Rails.application.config.database_configuration[Rails.env]).deep_dup
     active_record_config['pool'] = Sidekiq.options[:concurrency] + 5
 
-    ActiveRecord::Base.establish_connection(active_record_config)
+    ActiveRecord::Base.establish_connection(active_record_config.freeze)
   end
 
   Pompa::RedisConnection.pool_size = Sidekiq.options[:concurrency] + 5
