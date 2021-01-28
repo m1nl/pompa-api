@@ -252,7 +252,7 @@ module Pompa
           return false if jti.blank?
 
           redis.with do |r|
-            return r.exists(token_revoked_key(jti))
+            return r.exists?(token_revoked_key(jti))
           end
         end
 
