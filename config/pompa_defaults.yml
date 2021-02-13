@@ -27,6 +27,10 @@ default: &default
     access_timeout: 300
     temporary_access_timeout: 5
     token_refresh_margin: 90
+    auto_create_user: false
+    allowed_roles: []
+    role_attribute_name: "role"
+    role_attribute_name_format: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic"
   model_cache:
     enable: true
     expire: 300

@@ -1,5 +1,9 @@
 class AuthController < ApplicationController
   NAME_IDENTIFIER_FORMAT = 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'.freeze
+  DEFAULT_ROLES = [User::Roles::AUTH]
+
+  ROLE = 'Role'.freeze
+  POMPA = 'Pompa'.freeze
 
   rescue_from Pompa::Authentication::AuthenticationError,
     :with => :forbidden_error
@@ -56,6 +60,17 @@ class AuthController < ApplicationController
     return head :bad_request if client_id.blank?
 
     code = response.in_response_to
+    return head :bad_request if code.blank?
+
+    if !allowed_roles.empty?
+      return head :forbidden if role_attribute_name.blank?
+      return head :forbidden unless response.attributes.include?(role_attribute_name)
+
+      common_part = response.attributes.multi(role_attribute_name) & allowed_roles
+
+      return head :forbidden if common_part.empty?
+    end
+
     data = Pompa::Authentication::Token.authenticate(code, client_id: client_id)
 
     return_url = data[:return_url]
@@ -87,6 +102,13 @@ class AuthController < ApplicationController
       payload[:client_id].blank?
 
     self.authenticated_client_id = payload[:client_id]
+
+    if current_user.nil? && Rails.configuration.pompa
+      .authentication.auto_create_user
+      options = { roles: DEFAULT_ROLES, client_id: payload[:client_id] }
+      User.create!(options)
+    end
+
     return head :forbidden if current_user.nil?
 
     authorize :auth, :token?
@@ -144,8 +166,43 @@ class AuthController < ApplicationController
 
       saml_settings.name_identifier_format = NAME_IDENTIFIER_FORMAT
 
+      if !role_attribute_name.blank?
+        attribute = { :name_format => role_attribute_name_format,
+          :name => role_attribute_name, :friendly_name => ROLE,
+          :is_required => false }
+
+        saml_settings.attribute_consuming_service.service_name(POMPA)
+        saml_settings.attribute_consuming_service.add_attribute(attribute)
+      end
+
       @saml_settings = saml_settings
 
       return @saml_settings
+    end
+
+    def allowed_roles
+      return @allowed_roles if !@allowed_roles.nil?
+
+      @allowed_roles = []
+
+      if !Rails.configuration.pompa.authentication.allowed_roles.blank?
+        @allowed_roles += Array(Rails.configuration.pompa.authentication.allowed_roles)
+      end
+
+      return @allowed_roles
+    end
+
+    def role_attribute_name
+      return @role_attribute_name if !@role_attribute_name.nil?
+
+      @role_attribute_name = Rails.configuration.pompa.authentication.role_attribute_name
+      return @role_attribute_name
+    end
+
+    def role_attribute_name_format
+      return @role_attribute_name_format if !@role_attribute_name_format.nil?
+
+      @role_attribute_name_format = Rails.configuration.pompa.authentication.role_attribute_name_format
+      return @role_attribute_name_format
     end
 end
