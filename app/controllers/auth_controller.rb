@@ -28,17 +28,29 @@ class AuthController < ApplicationController
   def init
     return head :bad_request if params[:return_url].blank?
 
+    @auth_params = {}
+
     begin
-      url = Addressable::URI.parse(params[:return_url])
+      @auth_params[:return_url] = Addressable::URI
+        .parse(params[:return_url]).to_s
     rescue Addressable::URI::InvalidURIError
       return head :unprocessable_entity
+    end
+
+    if !params[:failed_url].blank?
+      begin
+        @auth_params[:failed_url] = Addressable::URI
+          .parse(params[:failed_url]).to_s
+      rescue Addressable::URI::InvalidURIError
+        return head :unprocessable_entity
+      end
     end
 
     saml_request = OneLogin::RubySaml::Authrequest.new
     saml_url = saml_request.create(saml_settings)
 
     nonce = Pompa::Authentication::Token.preauthenticate(
-      saml_request.uuid, return_url: url.to_s)
+      saml_request.uuid, @auth_params)
 
     return render :json => { nonce: nonce, redirect_url: saml_url }
   end
@@ -50,43 +62,45 @@ class AuthController < ApplicationController
     response = OneLogin::RubySaml::Response.new(
       params.fetch(:SAMLResponse), :settings => saml_settings)
 
-    if !response.is_valid?
-      multi_logger.error(["SAML response invalid - errors: ", response.errors],
-        no_truncate: true)
-      return head :bad_request
-    end
-
-    client_id = response.name_id
-    return head :bad_request if client_id.blank?
-
     code = response.in_response_to
     return head :bad_request if code.blank?
 
+    @auth_params = Pompa::Authentication::Token.introspect(code)
+
+    if !response.is_valid?
+      multi_logger.error(["SAML response invalid - errors: ", response.errors],
+        no_truncate: true)
+      return handle_error :bad_request
+    end
+
+    client_id = response.name_id
+    return handle_error :bad_request if client_id.blank?
+
     if !allowed_roles.empty?
-      return head :forbidden if role_attribute_name.blank?
-      return head :forbidden unless response.attributes.include?(role_attribute_name)
+      return handle_error :forbidden if role_attribute_name.blank?
+      return handle_error :forbidden unless response.attributes
+        .include?(role_attribute_name)
 
       common_part = response.attributes.multi(role_attribute_name) & allowed_roles
 
-      return head :forbidden if common_part.empty?
+      return handle_error :forbidden if common_part.empty?
     end
 
-    data = Pompa::Authentication::Token.authenticate(code, client_id: client_id)
+    @auth_params = Pompa::Authentication::Token
+      .authenticate(code, client_id: client_id)
 
-    return_url = data[:return_url]
-    return head :no_content if return_url.blank?
-
-    url = nil
+    return_url = @auth_params[:return_url]
+    return handle_error :unprocessable_entity if return_url.blank?
 
     begin
-      url = Addressable::URI.parse(return_url)
+      return_url = Addressable::URI.parse(return_url)
     rescue Addressable::URI::InvalidURIError
-      return head :no_content
+      return handle_error :unprocessable_entity
     end
 
-    url.query_values = (url.query_values || {}).merge(code: code)
+    return_url.query_values = (return_url.query_values || {}).merge(code: code)
 
-    return redirect_to url.to_s, status: :see_other
+    return redirect_to return_url.to_s, status: :see_other
   end
 
   # POST /auth/token
@@ -204,5 +218,23 @@ class AuthController < ApplicationController
 
       @role_attribute_name_format = Rails.configuration.pompa.authentication.role_attribute_name_format
       return @role_attribute_name_format
+    end
+
+    def handle_error(status_code)
+      return redirect_to @failed_url.to_s?,
+        status: :see_other if !@failed_url.blank?
+
+      if @failed_url.nil? && !@auth_params.nil? && !@auth_params[:failed_url].blank?
+        @failed_url = ''
+
+        begin
+          @failed_url = Addressable::URI.parse(@auth_params[:failed_url])
+        rescue Addressable::URI::InvalidURIError
+        end
+
+        return handle_error status_code
+      else
+        return head status_code
+      end
     end
 end

@@ -36,6 +36,49 @@ module Pompa
           return nonce
         end
 
+        def introspect(code)
+          auth_token_key = auth_token_key(code)
+          payload = nil
+
+          redis.with do |r|
+            r.watch(auth_token_key) do
+              token = r.get(auth_token_key)
+              raise(AuthenticationError,
+                'Authentication token not found') if token.blank?
+
+              payload = nil
+
+              begin
+                payload = JWT.decode(token, verify_key, true,
+                  { algorithm: JWT_ALGORITHM, verify_iat: true,
+                    verify_aud: true, aud: JWT_AUTHENTICATE_AUD,
+                    verify_sub: true, sub: "#{code}@pompa" })
+              rescue JWT::DecodeError => e
+                raise(AuthenticationError, "JWT parse error: #{e.message}")
+              end
+
+              raise(AuthenticationError,
+                'JWT parse error: payload is not an array') if payload.nil? ||
+                  !payload.kind_of?(Array)
+
+              payload = payload[0]
+              raise(AuthenticationError,
+                'JWT parse error: inner payload is not a hash') if payload.blank? ||
+                  !payload.is_a?(Hash)
+
+              payload.symbolize_keys!
+
+              yield payload if block_given?
+            end
+          end
+
+          return payload
+
+          rescue AuthenticationError => e
+            redis.with { |r| r.del(auth_token_key) }
+            raise e
+        end
+
         def authenticate(code, params = {})
           auth_token_key = auth_token_key(code)
           payload = nil
