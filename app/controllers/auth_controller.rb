@@ -221,7 +221,7 @@ class AuthController < ApplicationController
     end
 
     def handle_error(status_code)
-      return redirect_to @failed_url.to_s?,
+      return redirect_to @failed_url.to_s,
         status: :see_other if !@failed_url.blank?
 
       if @failed_url.nil? && !@auth_params.nil? && !@auth_params[:failed_url].blank?
