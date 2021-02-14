@@ -29,10 +29,14 @@ default: &default
     authentication_lifetime: 3600 # a single authentication lifetime before a token is invalidated (~maximum session duration)
     access_timeout: 300 # token timeout (~session timeout)
     temporary_access_timeout: 5 # temporary token timeout (~download link timeout)
-    token_refresh_margin: 90
-    idp_entity_id: "https://..."
-    idp_sso_target_url: "https://..."
-    idp_cert: |-
+    auto_create_user: false # automatically create user when a SAML assertion is valid
+    allowed_roles: [] # assertion is valid only when any of specified roles is passed
+    role_attribute_name: "role" # SAML role attribute name to match allowed_roles
+    role_attribute_name_format: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic" # SAML role attribute name format
+    token_refresh_margin: 90 # specifies when a token is too fresh to be refreshed (expert)
+    idp_entity_id: "https://..." # SAML entity ID
+    idp_sso_target_url: "https://..." # SAML SSO target URL
+    idp_cert: |- # SAML certificate
       -----BEGIN CERTIFICATE-----
       ...
       -----END CERTIFICATE-----
