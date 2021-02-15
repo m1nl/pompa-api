@@ -188,21 +188,23 @@ class CampaignWorkerJob < WorkerJob
       if queued_victims_length < victim_batch_size
         logger.debug('Attempting to synchronize victims')
 
-        model.scenarios.each do |s|
-          Victim.uncached do
-            Victim.queued.inactive.where(scenario_id: s.id)
-              .take(victim_batch_size - queued_victims_length)
-              .each do |v|
-              next if v.worker_started?
+        redis.with do |r|
+          model.scenarios.each do |s|
+            Victim.uncached do
+              Victim.queued.inactive.where(scenario_id: s.id)
+                .take(victim_batch_size - queued_victims_length)
+                .each do |v|
+                next if v.worker_started?
 
-              v.with_worker_lock(:redis => r) do
-                logger.debug("Starting worker and subscribing victim ##{v.id}")
-                v.subscribe(message_queue_key_name, :pool => redis)
-                v.start_worker(:pool => redis)
+                v.with_worker_lock(:redis => r) do
+                  logger.debug("Starting worker and subscribing victim ##{v.id}")
+                  v.subscribe(message_queue_key_name, :pool => redis)
+                  v.start_worker(:pool => redis)
+                end
+
+                logger.debug("Spawned and subscribed victim ##{v.id}")
+                add_queued_victim(v.id)
               end
-
-              logger.debug("Spawned and subscribed victim ##{v.id}")
-              add_queued_victim(v.id)
             end
           end
         end
