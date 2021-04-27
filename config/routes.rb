@@ -66,12 +66,6 @@ Rails.application.routes.draw do
         match '*path', via: :all, to: 'public#index'
       end
     end
-
-    if Rails.configuration.pompa.endpoints.sidekiq_console
-      require 'sidekiq/web'
-      Sidekiq::Web.set :session_secret, Rails.application.secrets[:secret_key_base]
-      mount Sidekiq::Web => '/sidekiq'
-    end
   end
 
   if Rails.env.production?

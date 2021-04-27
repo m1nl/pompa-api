@@ -22,7 +22,6 @@ default: &default
   endpoints: # backend endpoints to be enabled for this instance
     admin: true
     public: true
-    sidekiq_console: false
   authentication: # SAML authentication configuration
     enabled: false
     authentication_timeout: 300 # SAML authentication process timeout

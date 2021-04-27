@@ -19,7 +19,6 @@ default: &default
   endpoints:
     admin: true
     public: true
-    sidekiq_console: false
   authentication:
     enabled: false
     authentication_timeout: 300
