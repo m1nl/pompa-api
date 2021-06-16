@@ -36,6 +36,8 @@ gem 'jwt'
 gem 'pundit'
 gem 'ruby-saml'
 
+gem 'aws-sdk-s3'
+
 gem 'paperclip' if ENV['ENABLE_PAPERCLIP']
 
 group :development, :test do

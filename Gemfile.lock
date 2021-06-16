@@ -73,6 +73,22 @@ GEM
     attr_encrypted (3.1.0)
       encryptor (~> 3.0.0)
     awesome_print (1.9.2)
+    aws-eventstream (1.1.1)
+    aws-partitions (1.468.0)
+    aws-sdk-core (3.114.3)
+      aws-eventstream (~> 1, >= 1.0.2)
+      aws-partitions (~> 1, >= 1.239.0)
+      aws-sigv4 (~> 1.1)
+      jmespath (~> 1.0)
+    aws-sdk-kms (1.44.0)
+      aws-sdk-core (~> 3, >= 3.112.0)
+      aws-sigv4 (~> 1.1)
+    aws-sdk-s3 (1.96.1)
+      aws-sdk-core (~> 3, >= 3.112.0)
+      aws-sdk-kms (~> 1)
+      aws-sigv4 (~> 1.1)
+    aws-sigv4 (1.2.3)
+      aws-eventstream (~> 1, >= 1.0.2)
     bootsnap (1.7.5)
       msgpack (~> 1.0)
     builder (3.2.4)
@@ -111,6 +127,7 @@ GEM
     http-form_data (2.3.0)
     i18n (1.8.10)
       concurrent-ruby (~> 1.0)
+    jmespath (1.4.0)
     jsonapi-renderer (0.2.2)
     jwt (2.2.3)
     kaminari (1.2.1)
@@ -268,6 +285,7 @@ DEPENDENCIES
   activerecord-import
   attr_encrypted
   awesome_print
+  aws-sdk-s3
   bootsnap
   byebug
   colorize
@@ -301,4 +319,4 @@ DEPENDENCIES
   validate_url
 
 BUNDLED WITH
-   2.1.4
+   2.2.3
