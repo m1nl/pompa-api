@@ -118,9 +118,9 @@ class Template < ApplicationRecord
   end
 
   class << self
-    def import(zip_path)
+    def import(blob_id)
       Worker.reply_queue_key_name.tap { |q|
-        TemplateImportJob.perform_later(:zip_path => zip_path, :reply_to => q)
+        TemplateImportJob.perform_later(:blob_id => blob_id, :reply_to => q)
       }
     end
   end

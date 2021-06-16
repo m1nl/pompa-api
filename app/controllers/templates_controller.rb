@@ -56,7 +56,11 @@ class TemplatesController < ApplicationController
   # PUT /templates/import
   def import
     hash = params.permit(:file, :'Content-Type').to_unsafe_h
-    render_worker_request Template.import(hash[:file].path)
+    file = File.open(hash[:file].path)
+    filename = hash[:file].original_filename
+
+    blob = ActiveStorage::Blob.create_and_upload!(io: file, filename: filename)
+    render_worker_request Template.import(blob.id)
   end
 
   private

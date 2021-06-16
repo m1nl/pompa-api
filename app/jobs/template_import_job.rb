@@ -5,6 +5,7 @@ require 'digest'
 class TemplateImportJob < ApplicationJob
   include Pompa::Worker
 
+  ARCHIVE = 'archive'.freeze
   RESOURCE = 'resource'.freeze
 
   TEMPLATE_FILENAME = 'template.json'.freeze
@@ -19,22 +20,22 @@ class TemplateImportJob < ApplicationJob
   class << self
     def cleanup(opts)
       Pompa::RedisConnection.redis(opts) do |r|
-        zip_path = r.get(zip_path_key_name(opts[:instance_id]))
+        blob_id = r.get(blob_id_key_name(opts[:instance_id]))
         keep_file = !!r.get(keep_file_key_name(opts[:instance_id]))
 
         begin
-          File.delete(zip_path) if !keep_file && !zip_path.blank? &&
-            File.file?(zip_path)
+          blob = ActiveStorage::Blob.find_by_id(blob_id)
+          blob.purge if !blob.nil? && !keep_file
         rescue StandardError
         end
 
-        r.del(zip_path_key_name(opts[:instance_id]))
+        r.del(blob_id_key_name(opts[:instance_id]))
         r.del(keep_file_key_name(opts[:instance_id]))
       end
     end
 
-    def zip_path_key_name(instance_id)
-      "#{name}:#{instance_id}:zip_path"
+    def blob_id_key_name(instance_id)
+      "#{name}:#{instance_id}:blob_id"
     end
 
     def keep_file_key_name(instance_id)
@@ -46,16 +47,28 @@ class TemplateImportJob < ApplicationJob
     def invoke(opts = {})
       super(opts)
 
-      self.zip_path = opts.delete(:zip_path)
+      self.blob_id = opts.delete(:blob_id)
       self.keep_file = !!opts.delete(:keep_file)
 
-      return result(INVALID) if zip_path.blank? || !File.file?(zip_path)
+      return result(INVALID) if blob_id.blank?
 
       template = nil
+      blob = nil
+      tempfile = nil
 
       begin
         ActiveRecord::Base.transaction do
-          Zip::File.open(zip_path) do |zip_file|
+          blob = ActiveStorage::Blob.find_by_id(blob_id)
+          raise TemplateImportException
+            .new("unable to find #{blob_id} blob") if blob.nil?
+
+          tempfile = Tempfile.new(ARCHIVE)
+          tempfile.binmode
+
+          blob.download { |f| tempfile.write(f) }
+          tempfile.rewind
+
+          Zip::File.open(tempfile.path) do |zip_file|
             entry = zip_file.find_entry(TEMPLATE_FILENAME)
             raise TemplateImportException
               .new("unable to find #{TEMPLATE_FILENAME} in archive") if entry.nil?
@@ -166,7 +179,11 @@ class TemplateImportJob < ApplicationJob
         return result(ERROR, "#{e.class.name}: #{e.message}")
       ensure
         begin
-          File.delete(zip_path) if !keep_file && File.file?(zip_path)
+          blob.purge if !blob.nil? && !keep_file
+        rescue StandardError
+        end
+        begin
+          tempfile.unlink if !tempfile.nil?
         rescue StandardError
         end
       end
@@ -186,12 +203,12 @@ class TemplateImportJob < ApplicationJob
 
     ###
 
-    def zip_path
-      redis.with { |r| r.get(zip_path_key_name) }
+    def blob_id
+      redis.with { |r| r.get(blob_id_key_name) }
     end
 
-    def zip_path=(value)
-      redis.with { |r| r.set(zip_path_key_name, value) }
+    def blob_id=(value)
+      redis.with { |r| r.set(blob_id_key_name, value) }
     end
 
     def keep_file
@@ -204,8 +221,8 @@ class TemplateImportJob < ApplicationJob
 
     ###
 
-    def zip_path_key_name
-      self.class.zip_path_key_name(instance_id)
+    def blob_id_key_name
+      self.class.blob_id_key_name(instance_id)
     end
 
     def keep_file_key_name
