@@ -3,12 +3,13 @@ require 'oj'
 class WorkersController < ApplicationController
   include Renderable
 
-  ATTACHMENT = 'attachment'.freeze
-  QUANTUM = 1.seconds
-
   allow_temporary_token_for :replies, :files
 
   before_action :set_worker, only: [:show]
+
+  QUANTUM = 1.seconds
+
+  LAST_MODIFIED_HEADER = 'Last-Modified'.freeze
 
   # GET /workers
   def index
@@ -41,17 +42,17 @@ class WorkersController < ApplicationController
 
       if json.nil? && sync
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        response = nil
+        worker_response = nil
 
         loop do
-          response = r.brpop(reply_queue, :timeout => QUANTUM)
+          worker_response = r.brpop(reply_queue, :timeout => QUANTUM)
           time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          break if !response.nil? || (time - start) >= timeout
+          break if !worker_response.nil? || (time - start) >= timeout
         end
 
-        return render status: :no_content if response.nil?
+        return render status: :no_content if worker_response.nil?
 
-        json = response[1]
+        json = worker_response[1]
       end
 
       return render status: :no_content if json.nil?
@@ -97,17 +98,17 @@ class WorkersController < ApplicationController
 
       if json.nil? && sync
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        response = nil
+        worker_response = nil
 
         loop do
-          response = r.brpop(reply_queue, :timeout => QUANTUM)
+          worker_response = r.brpop(reply_queue, :timeout => QUANTUM)
           time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          break if !response.nil? || (time - start) >= timeout
+          break if !worker_response.nil? || (time - start) >= timeout
         end
 
-        return render status: :no_content if response.nil?
+        return render status: :no_content if worker_response.nil?
 
-        json = response[1]
+        json = worker_response[1]
       end
 
       return render status: :no_content if json.nil?
@@ -132,10 +133,19 @@ class WorkersController < ApplicationController
       else
         r.lpush(reply_queue, json) if request.method.downcase.to_sym != :get
 
-        path = message.dig(:result, :path)
+        blob_id = message.dig(:result, :blob_id)
         filename = message.dig(:result, :filename)
-        return send_file(path, :filename => filename) if File.file?(path)
-        return render status: :not_found
+
+        blob = ActiveStorage::Blob.find_by_id(blob_id)
+        return render status: :not_found if blob.nil?
+
+        self.response.headers["Content-Type"] = blob.content_type
+        self.response.headers["Content-Disposition"] =
+          Pompa::Utils.content_disposition(filename) if !filename.blank?
+        self.response.headers[LAST_MODIFIED_HEADER] ||= Time.current.httpdate
+
+        self.status = :ok
+        self.response_body = StreamingWrapper.new(blob)
       end
     end
   end
@@ -143,5 +153,27 @@ class WorkersController < ApplicationController
   private
     def set_worker
       @worker = Worker.find_by_id(params[:id])
+    end
+
+    class StreamingWrapper
+      def initialize(blob, opts = {})
+        @blob = blob
+      end
+
+      def each
+        @blob.download { |c| yield c }
+      rescue StandardError => e
+        yield handle_streaming_error(e)
+      end
+
+      private
+        def handle_streaming_error(e)
+          error_message = "Error in #{self.class.name}, #{e.class}: #{e.message}"
+
+          multi_logger.error(error_message)
+          multi_logger.backtrace(e)
+
+          "<!-- #{error_message} -->"
+        end
     end
 end

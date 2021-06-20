@@ -269,15 +269,14 @@ class PublicController < ApplicationController
       "<!-- #{error_message} -->"
     end
 
-    private
-      def cache_expire
-        @cache_expire ||= Rails.configuration.pompa
-          .response_cache.expire.seconds
-      end
+    def cache_expire
+      @cache_expire ||= Rails.configuration.pompa
+        .response_cache.expire.seconds
+    end
 
-      def cache_enabled?
-        @cache_enabled = Rails.configuration.pompa
-          .response_cache.enable if @cache_enabled.nil?
-        @cache_enabled
-      end
+    def cache_enabled?
+      @cache_enabled = Rails.configuration.pompa
+        .response_cache.enable if @cache_enabled.nil?
+      @cache_enabled
+    end
 end
