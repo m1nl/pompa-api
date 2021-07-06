@@ -238,7 +238,7 @@ GEM
     ruby-saml (1.12.2)
       nokogiri (>= 1.10.5)
       rexml
-    rubyzip (2.3.0)
+    rubyzip (2.3.2)
     sidekiq (6.2.1)
       connection_pool (>= 2.2.2)
       rack (~> 2.0)
