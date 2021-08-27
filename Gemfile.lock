@@ -239,7 +239,7 @@ GEM
       nokogiri (>= 1.10.5)
       rexml
     rubyzip (2.3.2)
-    sidekiq (6.2.1)
+    sidekiq (6.2.2)
       connection_pool (>= 2.2.2)
       rack (~> 2.0)
       redis (>= 4.2.0)
