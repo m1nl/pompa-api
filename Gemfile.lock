@@ -235,7 +235,7 @@ GEM
     rubocop-ast (1.11.0)
       parser (>= 3.0.1.1)
     ruby-progressbar (1.11.0)
-    ruby-saml (1.12.2)
+    ruby-saml (1.13.0)
       nokogiri (>= 1.10.5)
       rexml
     rubyzip (2.3.2)
