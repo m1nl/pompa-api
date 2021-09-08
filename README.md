@@ -46,7 +46,7 @@ Steps for DB configuration (valid for Ubuntu, Debian and CentOS):
 * `sudo -u postgres psql`
 * `CREATE USER _USER_;`
 * `CREATE DATABASE pompa_dev OWNER <USER>;`
-* `\c pompa`
+* `\c pompa_dev`
 * `CREATE EXTENSION citext;`
 * `CREATE EXTENSION pg_trgm;`
 * `CREATE EXTENSION tablefunc;`
