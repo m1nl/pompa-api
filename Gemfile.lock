@@ -158,7 +158,7 @@ GEM
       kaminari-core (= 1.2.1)
     kaminari-core (1.2.1)
     liquid (5.1.0)
-    listen (3.6.0)
+    listen (3.7.0)
       rb-fsevent (~> 0.10, >= 0.10.3)
       rb-inotify (~> 0.9, >= 0.9.10)
     llhttp-ffi (0.4.0)
@@ -315,7 +315,7 @@ DEPENDENCIES
   jwt
   kaminari
   liquid
-  listen (>= 3.0.5, < 3.7)
+  listen (>= 3.0.5, < 3.8)
   mail
   oj
   pg
