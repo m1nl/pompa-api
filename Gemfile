@@ -37,6 +37,7 @@ gem 'pundit'
 gem 'ruby-saml'
 
 gem 'aws-sdk-s3'
+gem 'azure-storage-blob'
 
 gem 'paperclip' if ENV['ENABLE_PAPERCLIP']
 
