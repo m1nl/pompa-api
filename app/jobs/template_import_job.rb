@@ -120,12 +120,18 @@ class TemplateImportJob < ApplicationJob
 
                 begin
                   entry.extract(temp_filename)
-                  resource.file.attach({
+
+                  blob = ActiveStorage::Blob.create_and_upload!(
                     io: File.open(temp_filename, 'rb'),
                     filename: r.dig(:file, :filename),
                     content_type: r.dig(:file, :content_type),
                     identify: false
                   })
+                  blob.analyze
+
+                  resource.file.purge
+                  resource.file.attach(blob)
+
                   mark
                 ensure
                   File.delete(temp_filename) if File.file?(temp_filename)
