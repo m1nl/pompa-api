@@ -126,7 +126,7 @@ class TemplateImportJob < ApplicationJob
                     filename: r.dig(:file, :filename),
                     content_type: r.dig(:file, :content_type),
                     identify: false
-                  })
+                  )
                   blob.analyze
 
                   resource.file.purge
