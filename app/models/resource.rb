@@ -213,8 +213,16 @@ class Resource < ApplicationRecord
           file.blob.download { |f| tempfile.write(f) }
           tempfile.rewind
 
-          c.file.attach({ io: tempfile, filename: file.blob.filename,
-            content_type: file.blob.content_type, identify: false })
+          blob = ActiveStorage::Blob.create_and_upload!(
+            io: tempfile,
+            filename: file.blob.filename,
+            content_type: file.blob.content_type,
+            identify: false
+          )
+          blob.analyze
+
+          c.file.purge
+          c.file.attach(blob)
         ensure
           tempfile.unlink
         end
