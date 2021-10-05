@@ -255,6 +255,10 @@ module Pompa
               r.lpush(queue_key_name, message.to_json)
             end
 
+            if !reply_queue_id(message[:reply_to]).nil?
+              r.expire(queue_key_name, timeout)
+            end
+
             ## unlock if locked to prevent deadlock
             locked = worker_locked?(opts.merge(:redis => r,
               :instance_id => instance_id, :name => name))
@@ -307,6 +311,10 @@ module Pompa
               r.rpush(queue_key_name, message.to_json)
             else
               r.lpush(queue_key_name, message.to_json)
+            end
+
+            if !reply_queue_id(message[:reply_to]).nil?
+              r.expire(queue_key_name, timeout)
             end
           end
 

@@ -20,15 +20,10 @@ module Pompa
       end
 
       def reply_queue_key_name(opts = {})
-        timeout = opts.delete(:timeout) || expiry_timeout
         queue_id = opts.delete(:queue_id)
 
         queue_id ||= reply_queue_id if queue_id.blank?
         queue_key_name = "#{ANONYMOUS}:#{queue_id}"
-
-        Pompa::RedisConnection.redis(opts) { |r|
-          r.expire(queue_key_name, timeout)
-        }
 
         return queue_key_name
       end
