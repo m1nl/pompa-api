@@ -4,21 +4,27 @@ require 'connection_pool'
 
 module Pompa
   class RedisConnection
-    class << self
-      GLOBAL_DB = :global
-      SYMBOLIZE_VALUES_FOR = [:driver, :role].freeze
+    DEFAULT_DB = :default
+    CACHE_DB = :cache
+    LOCK_DB = :lock
+    SIDEKIQ_DB = :sidekiq
 
+    SYMBOLIZE_VALUES_FOR = [:driver, :role].freeze
+
+    class << self
       def pool(opts = {})
         @pool ||= {}
 
-        db = opts.delete(:db) || GLOBAL_DB
+        db = opts.delete(:db) || DEFAULT_DB
         db = db.to_sym
 
         return @pool[db] if !@pool[db].nil?
 
+        size = opts.delete(:pool_size) || pool_size
+
         config = config(opts.merge(:db => db)).freeze
 
-        @pool[db] = ConnectionPool.new(size: pool_size) { Redis.new(config) }
+        @pool[db] = ConnectionPool.new(size: size) { Redis.new(config) }
       end
 
       def redis(opts = {})
@@ -41,7 +47,7 @@ module Pompa
 
         already_locked = !!lock_info
 
-        redis(opts) do |r|
+        redis(opts.merge(:db => LOCK_DB)) do |r|
           lock(resource_key, timeout, opts.merge(:redis => r))
 
           begin
@@ -58,7 +64,7 @@ module Pompa
 
         already_locked = !!lock_info
 
-        redis(opts) do |r|
+        redis(opts.merge(:db => LOCK_DB)) do |r|
           if already_locked
             lock_info = lock_manager.lock(lock_key, timeout.in_milliseconds,
               extend: lock_info)
@@ -106,7 +112,7 @@ module Pompa
       def config(opts = {})
         @config ||= {}
 
-        db = opts.delete(:db) || GLOBAL_DB
+        db = opts.delete(:db) || DEFAULT_DB
         db = db.to_sym
 
         return @config[db] if !@config[db].nil?
@@ -116,13 +122,13 @@ module Pompa
         if config[:db].is_a?(Hash)
           db_config = config.delete(:db).to_h.symbolize_keys!
           config[:db] = db_config[db]
-          config[:db] ||= db_config[GLOBAL_DB]
+          config[:db] ||= db_config[DEFAULT_DB]
         end
 
         if config[:url].is_a?(Hash)
           url_config = config.delete(:url).to_h.symbolize_keys!
           config[:url] = url_config[db]
-          config[:url] ||= url_config[GLOBAL_DB]
+          config[:url] ||= url_config[DEFAULT_DB]
         end
 
         config.merge!(config.extract!(*SYMBOLIZE_VALUES_FOR)

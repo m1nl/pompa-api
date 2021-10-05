@@ -6,7 +6,7 @@ redis_default: &redis_default
   pool_size: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   url: "unix:///var/run/redis/redis-server.sock"
   db:
-    global: 0
+    default: 0
     cache: 10
 
 default: &default

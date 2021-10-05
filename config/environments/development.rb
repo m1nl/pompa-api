@@ -20,7 +20,9 @@ Rails.application.configure do
     config.action_controller.perform_caching = true
 
     config.cache_store = :redis_cache_store, Pompa::RedisConnection
-      .config(:db => :cache).slice(:driver, :url, :db)
+      .config(:db => Pompa::RedisConnection::SIDEKIQ_DB)
+      .slice(:driver, :url, :db)
+
     config.public_file_server.headers = {
       'Cache-Control' => "public, max-age=#{2.days.to_i}"
     }

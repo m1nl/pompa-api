@@ -65,7 +65,9 @@ module Model
         .model_cache.expire.seconds
 
       if @cache_enable
-        Pompa::RedisConnection.redis(opts) do |r|
+        Pompa::RedisConnection.redis(
+          :db => Pompa::RedisConnection::CACHE_DB
+        ) do |r|
           return r.get(cached_key_name(id)) if r.exists?(cached_key_name(id))
 
           opts[:model] = find_by_id(id)
@@ -84,7 +86,9 @@ module Model
     end
 
     def reset_cached_key(id, opts = {})
-      Pompa::RedisConnection.redis(opts) do |r|
+      Pompa::RedisConnection.redis(
+        :db => Pompa::RedisConnection::CACHE_DB
+      ) do |r|
         r.pipelined do |p|
           Array(id).each { |i| p.del(cached_key_name(i)) }
         end
