@@ -20,12 +20,10 @@ Rails.application.configure do
     config.action_controller.perform_caching = true
 
     config.cache_store = :redis_cache_store, Pompa::RedisConnection
-      .config(:db => Pompa::RedisConnection::SIDEKIQ_DB)
-      .slice(:driver, :url, :db)
-
-    config.public_file_server.headers = {
-      'Cache-Control' => "public, max-age=#{2.days.to_i}"
-    }
+      .config(:db => Pompa::RedisConnection::CACHE_DB)
+      .merge(:expires_in => Rails.configuration.pompa.model_cache.expire.seconds)
+      .merge(:namespace => Pompa::RedisConnection::CACHE_DB_NAMESPACE)
+      .slice(:driver, :url, :db, :namespace, :expires_in)
   else
     config.action_controller.perform_caching = false
 

@@ -10,6 +10,8 @@ module Pompa
     SIDEKIQ_DB = :sidekiq
     EVENTS_DB = :events
 
+    CACHE_DB_NAMESPACE = :pompa_cache
+
     SYMBOLIZE_VALUES_FOR = [:driver, :role].freeze
 
     class << self

@@ -46,7 +46,9 @@ Rails.application.configure do
   # Use a different cache store in production.
   config.cache_store = :redis_cache_store, Pompa::RedisConnection
     .config(:db => Pompa::RedisConnection::CACHE_DB)
-    .slice(:driver, :url, :db)
+    .merge(:expires_in => Rails.configuration.pompa.model_cache.expire.seconds)
+    .merge(:namespace => Pompa::RedisConnection::CACHE_DB_NAMESPACE)
+    .slice(:driver, :url, :db, :namespace, :expires_in)
 
   # Use a real queuing backend for Active Job (and separate queues per environment).
   # config.active_job.queue_adapter     = :resque
