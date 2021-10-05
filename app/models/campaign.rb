@@ -75,6 +75,8 @@ class Campaign < ApplicationRecord
 
   class << self
     def push_event(campaign_id, victim_id, goal_id, data = {}, opts = {})
+      opts[:db] ||= events_redis_db
+
       Pompa::RedisConnection.redis(opts) do |r|
         event = {
           victim_id: victim_id,
@@ -91,7 +93,7 @@ class Campaign < ApplicationRecord
       ids = []
       key_name = event_queue_key_name(campaign_id)
 
-      opts[:db] ||= public_redis_db
+      opts[:db] ||= events_redis_db
 
       Pompa::RedisConnection.redis(opts) do |r|
         return ids unless r.llen(key_name) > 0
@@ -128,8 +130,8 @@ class Campaign < ApplicationRecord
       @batch_size ||= Rails.configuration.pompa.batch_size
     end
 
-    def public_redis_db
-      @public_redis_db ||= Rails.configuration.pompa.campaign.public_redis_db.to_sym
+    def events_redis_db
+      @events_redis_db ||= Rails.configuration.pompa.campaign.events_redis_db.to_sym
     end
 
     def event_queue_key_name(id)

@@ -4,10 +4,13 @@
 redis_default: &redis_default
   driver: hiredis
   pool_size: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  url: "unix:///var/run/redis/redis-server.sock"
+  url: "unix:///var/run/redis/redis-server.sock" # you can also define different URLs as in db key below
   db:
-    default: 0
-    cache: 10
+    _default: 0 # default database (used as fallback if no other is defined)
+    cache: 10 # database for rails and model cache
+    lock: 11 # database for worker locks
+    sidekiq: 12 # database for sidekiq
+    events: 13 # database for campaign events
 
 default: &default
   log_level: "info" # available log levels are: debug, info, warn, error, fatal and unknown
@@ -63,7 +66,7 @@ default: &default
     victim_batch_size: 3 # how many victim worker jobs should be spawned at once
     error_threshold: 6 # number of errors before a campaign is paused
     respawn_interval: 300 # how often the campaign worker job should be respawned (expert)
-    public_redis_db: global # name of redis db to communicate with public API (expert)
+    events_redis_db: "events" # name of redis db to exchange evnets with public endpoint (expert)
   victim: # parameters for victim worker
     email_timeout: 300 # how long a worker should wait for a response from a mailer worker before timeout
     retry_threshold: 5 # how many times a worker should try to queue an email before going into error state

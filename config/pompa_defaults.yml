@@ -3,7 +3,7 @@ redis_default: &redis_default
   pool_size: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   url: "<%= ENV.fetch('POMPA_REDIS_URL') { 'unix:///var/run/redis/redis-server.sock' } %>"
   db:
-    default: 0
+    _default: 0
     cache: 10
 
 default: &default
@@ -54,7 +54,7 @@ default: &default
     victim_batch_size: 3
     error_threshold: 6
     respawn_interval: 300
-    public_redis_db: global
+    events_redis_db: "events"
   victim:
     email_timeout: 300
     retry_threshold: 5

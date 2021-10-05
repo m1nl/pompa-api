@@ -183,7 +183,7 @@ class CampaignWorkerJob < WorkerJob
       return false unless sync_required?
 
       logger.debug('Attempting to synchronize events')
-      model.synchronize_events(:db => public_redis_db)
+      model.synchronize_events(:db => events_redis_db)
 
       if queued_victims_length < victim_batch_size
         logger.debug('Attempting to synchronize victims')
@@ -290,8 +290,8 @@ class CampaignWorkerJob < WorkerJob
       @error_threshold ||= Rails.configuration.pompa.campaign.error_threshold
     end
 
-    def public_redis_db
-      @public_redis_db ||= Rails.configuration.pompa.campaign.public_redis_db.to_sym
+    def events_redis_db
+      @events_redis_db ||= Rails.configuration.pompa.campaign.events_redis_db.to_sym
     end
 
     ###

@@ -4,10 +4,11 @@ require 'connection_pool'
 
 module Pompa
   class RedisConnection
-    DEFAULT_DB = :default
+    DEFAULT_DB = :_default
     CACHE_DB = :cache
     LOCK_DB = :lock
     SIDEKIQ_DB = :sidekiq
+    EVENTS_DB = :events
 
     SYMBOLIZE_VALUES_FOR = [:driver, :role].freeze
 
