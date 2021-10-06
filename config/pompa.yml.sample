@@ -11,6 +11,7 @@ redis_default: &redis_default
     lock: 11 # database for worker locks
     sidekiq: 12 # database for sidekiq
     events: 13 # database for campaign events
+    auth: 14 # database for authentication tokens
 
 default: &default
   log_level: "info" # available log levels are: debug, info, warn, error, fatal and unknown

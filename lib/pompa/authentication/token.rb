@@ -333,7 +333,8 @@ module Pompa
 
         private
           def redis
-            @redis ||= Pompa::RedisConnection.pool
+            @redis ||= Pompa::RedisConnection.pool(
+              :db => Pompa::RedisConnection::AUTH_DB)
           end
 
           ###

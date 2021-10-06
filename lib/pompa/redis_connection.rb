@@ -9,6 +9,7 @@ module Pompa
     LOCK_DB = :lock
     SIDEKIQ_DB = :sidekiq
     EVENTS_DB = :events
+    AUTH_DB = :auth
 
     CACHE_DB_NAMESPACE = :pompa_cache
 
@@ -126,12 +127,16 @@ module Pompa
           db_config = config.delete(:db).to_h.symbolize_keys!
           config[:db] = db_config[db]
           config[:db] ||= db_config[DEFAULT_DB]
+
+          config.except!(:db) if config[:db].nil? || config[:db] == 0
         end
 
         if config[:url].is_a?(Hash)
           url_config = config.delete(:url).to_h.symbolize_keys!
           config[:url] = url_config[db]
           config[:url] ||= url_config[DEFAULT_DB]
+
+          config.except!(:url) if config[:url].nil?
         end
 
         config.merge!(config.extract!(*SYMBOLIZE_VALUES_FOR)
