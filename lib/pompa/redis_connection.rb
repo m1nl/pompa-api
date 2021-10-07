@@ -121,22 +121,17 @@ module Pompa
 
         return @config[db] if !@config[db].nil?
 
-        config = Rails.configuration.pompa.redis.dup.to_h.symbolize_keys!
+        config = {}
 
-        if config[:db].is_a?(Hash)
-          db_config = config.delete(:db).to_h.symbolize_keys!
-          config[:db] = db_config[db]
-          config[:db] ||= db_config[DEFAULT_DB]
+        Rails.configuration.pompa.redis.to_h.symbolize_keys.each do |k, v|
+          if v.is_a?(Hash)
+            db_config = v.symbolize_keys
+            config[k] = db_config[db] || db_config[DEFAULT_DB]
+          else
+            config[k] = v
+          end
 
-          config.except!(:db) if config[:db].nil? || config[:db] == 0
-        end
-
-        if config[:url].is_a?(Hash)
-          url_config = config.delete(:url).to_h.symbolize_keys!
-          config[:url] = url_config[db]
-          config[:url] ||= url_config[DEFAULT_DB]
-
-          config.except!(:url) if config[:url].nil?
+          config.except!(k) if config[k].nil?
         end
 
         config.merge!(config.extract!(*SYMBOLIZE_VALUES_FOR)
