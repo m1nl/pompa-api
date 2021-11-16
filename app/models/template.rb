@@ -25,12 +25,15 @@ class Template < ApplicationRecord
   has_many :resources
   has_many :attachments
   has_many :scenarios
+  belongs_to :phishing_report_goal, class_name: 'Goal', optional: true
 
   validates :name, presence: true
   validates :base_url, :url => { :allow_nil => true, :allow_blank => true }
 
   nullify_blanks :sender_email, :sender_name, :base_url, :landing_url,
     :report_url, :static_resource_url, :dynamic_resource_url
+
+  build_model_append :phishing_report_goal
 
   liquid_template :report_url, default: Rails.configuration
       .pompa.template.report_url
@@ -48,7 +51,7 @@ class Template < ApplicationRecord
 
   def liquid_flags(model = {}, opts = {})
     full_model = build_model(model, opts)
-    filters = TemplateFilters.new(self, full_model, opts)
+    filters = TemplateFilters.new(self, full_model, opts.except(:name))
     return { :filters => [filters] }.merge!(Pompa::Utils.liquid_flags)
   end
 

@@ -4,14 +4,11 @@ class Goal < ApplicationRecord
   include Model
 
   belongs_to :template, required: true
-  has_many :goal
 
   validates :name, :code, presence: true
   validates :score, numericality: { only_integer: true }
 
   default :code, proc { Pompa::Utils.random_code }
-
-  build_model_prepend :template
 
   after_commit :clear_cached_values
 

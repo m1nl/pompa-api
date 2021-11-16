@@ -19,6 +19,7 @@ class Scenario < ApplicationRecord
   belongs_to :template, required: true
   belongs_to :mailer, required: true
   belongs_to :group
+
   has_many :victims
   has_one :report, foreign_key: 'scenario_id', class_name: 'ScenarioReport'
 

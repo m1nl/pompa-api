@@ -7,7 +7,7 @@ module Model
   TIMESTAMP = 'timestamp'.freeze
 
   def build_model!(model = {}, opts = {})
-    name = self.class.name.underscore
+    name = opts[:name] || self.class.name.underscore
 
     opts[:ignore] = Array(opts[:ignore])
     return model if (!model[name].nil? && model.dig(name, ID) == id)
@@ -17,7 +17,8 @@ module Model
       self.class.build_model_prepend.each do |m|
         association = self.class.reflect_on_association(m)
         association.klass.build_model!(
-          attributes[association.foreign_key], model, opts)
+          attributes[association.foreign_key],
+          model, opts.merge(:name => m.to_s))
       end
     end
 
@@ -44,7 +45,8 @@ module Model
       self.class.build_model_append.each do |m|
         association = self.class.reflect_on_association(m)
         association.klass.build_model!(
-          attributes[association.foreign_key], model, opts)
+          attributes[association.foreign_key],
+          model, opts.merge(:name => m.to_s))
       end
     end
 
@@ -107,7 +109,7 @@ module Model
     end
 
     def build_model!(id, model = {}, opts = {})
-      name = self.name.underscore
+      name = opts[:name] || self.name.underscore
 
       opts[:ignore] = Array(opts[:ignore])
       return model if (!model[name].nil? && model.dig(name, ID) == id)
@@ -126,7 +128,8 @@ module Model
 
           build_model_prepend.each do |m|
             association = reflect_on_association(m)
-            association.klass.build_model!(ids[m], model, opts)
+            association.klass.build_model!(ids[m], model,
+              opts.merge(:name => m.to_s))
           end
         end
       end
@@ -165,7 +168,8 @@ module Model
         build_model_append.each do |m|
           association = reflect_on_association(m)
           association.klass.build_model!(
-            model.dig(name, association.foreign_key), model, opts)
+            model.dig(name, association.foreign_key), model,
+              opts.merge(:name => m.to_s))
         end
       end
 

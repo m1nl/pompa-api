@@ -74,6 +74,6 @@ class TemplatesController < ApplicationController
       params.require(:template).permit(:name, :description, :sender_email,
         :sender_name, :base_url, :landing_url, :report_url,
         :static_resource_url, :dynamic_resource_url, :subject, :plaintext,
-        :html)
+        :html, :phishing_report_goal_id)
     end
 end
