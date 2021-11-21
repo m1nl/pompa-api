@@ -1,12 +1,13 @@
 require 'pompa/redis_connection'
 require 'jwt'
 require 'base64'
+require 'rbnacl'
 
 module Pompa
   module Authentication
     class Token
       class << self
-        AUTH_BYTES = 32
+        AUTH_BYTES = RbNaCl::Signatures::Ed25519::SEEDBYTES
         TIME_SHIFT = 10.seconds
 
         JWT_ALGORITHM = 'ED25519'.freeze

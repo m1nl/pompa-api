@@ -45,6 +45,13 @@ namespace :pompa do
     end
   end
 
+  desc "Get Pompa Ed25519 verify key"
+  task :get_verify_key => :environment do
+    Rails.eager_load!
+
+    puts Pompa::Utils.verify_key_bytes
+  end
+
   desc "Clear cache"
   task :clear_cache => :environment do
     Rails.eager_load!

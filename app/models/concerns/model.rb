@@ -109,9 +109,11 @@ module Model
     end
 
     def build_model!(id, model = {}, opts = {})
-      name = opts[:name] || self.name.underscore
+      return model if id.nil?
 
+      name = opts[:name] || self.name.underscore
       opts[:ignore] = Array(opts[:ignore])
+
       return model if (!model[name].nil? && model.dig(name, ID) == id)
       return model if opts[:ignore].include?(name.to_sym)
 

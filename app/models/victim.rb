@@ -28,11 +28,13 @@ class Victim < ApplicationRecord
   ATTACHMENT = 'attachment'.freeze
   FILENAME = 'filename'.freeze
   TEMPLATE = 'template'.freeze
+  PHISHING_REPORT_GOAL = 'phishing_report_goal'.freeze
   SENDER_EMAIL = 'sender_email'.freeze
   SENDER_NAME = 'sender_name'.freeze
   SUBJECT = 'subject'.freeze
   PLAINTEXT = 'plaintext'.freeze
   HTML = 'html'.freeze
+  CODE = 'code'.freeze
 
   STATE_CHANGE = 'state_change'.freeze
 
@@ -143,10 +145,19 @@ class Victim < ApplicationRecord
 
     full_model = build_model(model, opts)
 
-    template = scenario.template
-
     headers = opts[:headers] || {}
-    headers[@expose_header] ||= code if !@expose_header.blank?
+
+    if !@expose_header.blank?
+      expose_data = { victim_code: code }
+
+      phishing_report_goal_code = full_model.dig(PHISHING_REPORT_GOAL, CODE)
+
+      if !phishing_report_goal_code.blank?
+        expose_data.merge!(phishing_report_goal_code: phishing_report_goal_code)
+      end
+
+      headers[@expose_header] ||= Pompa::Utils.signed_token(expose_data)
+    end
 
     return {
       :sender_email => full_model.dig(TEMPLATE, SENDER_EMAIL),

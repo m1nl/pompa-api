@@ -61,7 +61,7 @@ default: &default
   victim:
     email_timeout: 300
     retry_threshold: 5
-    expose_header: "X-Victim-Code"
+    expose_header: "X-Pompa-Expose"
   template:
     base_url: "<%= ENV.fetch('POMPA_BASE_URL') { 'http://localhost:3000/api/public/' } %>"
     report_url: >-

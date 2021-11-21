@@ -5,11 +5,14 @@ require 'zlib'
 require 'rbnacl'
 require 'i18n'
 require 'uri'
+require 'jwt'
 
 module Pompa
   class Utils
     class << self
       DEFAULT_TRUNCATE = 50
+
+      JWT_ALGORITHM = 'ED25519'.freeze
 
       def random_code
         SecureRandom.urlsafe_base64(code_length)
@@ -107,25 +110,57 @@ module Pompa
       def encrypt(input, compress = false)
         input = Zlib::Deflate.new.deflate(input, Zlib::FINISH) if compress
 
-        box = RbNaCl::SimpleBox::from_secret_key(encryption_key)
-
-        encrypted = box.encrypt(input)
+        encrypted = secret_box.encrypt(input)
         return Base64.urlsafe_encode64(encrypted, padding: false)
       end
 
       def decrypt(input, decompress = false)
         decoded = Base64.urlsafe_decode64(input)
 
-        box = RbNaCl::SimpleBox::from_secret_key(encryption_key)
-
-        plaintext = box.decrypt(decoded)
+        plaintext = secret_box.decrypt(decoded)
         return decompress ? Zlib::Inflate.new.inflate(plaintext) : plaintext
       end
 
+      def sign(input, compress = false)
+        input = Zlib::Deflate.new.deflate(input, Zlib::FINISH) if compress
+
+        signed = signing_key.sign(input)
+        return Base64.urlsafe_encode64(signed, padding: false)
+      end
+
+      def signed_token(data)
+        payload = data.merge({ iat: Time.now.to_i })
+
+        return JWT.encode(payload, signing_key, JWT_ALGORITHM)
+      end
+
+      def verify_key_bytes(encode = true)
+        bytes = signing_key.verify_key.to_s
+
+        if encode
+          return Base64.urlsafe_encode64(bytes, padding: false)
+        else
+          return bytes
+        end
+      end
+
       private
-        def encryption_key
-          @encryption_key ||= Rails.application.key_generator.generate_key('',
+        def encryption_key_seed
+          @encryption_key_seed ||= Rails.application.key_generator.generate_key('',
             RbNaCl::SecretBox.key_bytes)
+        end
+
+        def signing_key_seed
+          @signing_key_seed ||= Rails.application.key_generator.generate_key('',
+            RbNaCl::Signatures::Ed25519::SEEDBYTES)
+        end
+
+        def signing_key
+          return RbNaCl::SigningKey.new(signing_key_seed)
+        end
+
+        def secret_box
+          return RbNaCl::SimpleBox::from_secret_key(encryption_key_seed)
         end
     end
   end

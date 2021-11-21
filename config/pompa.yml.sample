@@ -71,7 +71,7 @@ default: &default
   victim: # parameters for victim worker
     email_timeout: 300 # how long a worker should wait for a response from a mailer worker before timeout
     retry_threshold: 5 # how many times a worker should try to queue an email before going into error state
-    expose_header: "X-Victim-Code" # header name inside email to include the victim unique ID (victim code)
+    expose_header: "X-Pompa-Expose" # header name inside email to include a signed JWT token with victim and phishing report goal codes
   template: # parameters / defaults for a template
     base_url: "http://localhost:3000/api/public" # default base URL for a template (instance default value)
   report: # parameters for event reporting subsystem inside the public endpoint
