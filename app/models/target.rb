@@ -7,6 +7,7 @@ class Target < ApplicationRecord
   FEMALE = 'female'.freeze
   MALE = 'male'.freeze
 
+  CSV_OPEN_MODE = 'r:bom|utf-8'.freeze
   CSV_ROW = [:first_name, :last_name, :email, :gender, :department, :comment, :group_id].freeze
   CSV_OPTIONS = { col_sep: ',', quote_char:'"' }.freeze
 
@@ -38,16 +39,18 @@ class Target < ApplicationRecord
         params = params.symbolize_keys
         targets = []
 
-        CSV.foreach(file.path, **CSV_OPTIONS) do |r|
-          target_attributes = Hash[CSV_ROW.zip(r)]
-            .merge(params)
-            .slice(*IMPORT_COLUMNS)
-          targets << Target.new(target_attributes)
+        CSV.open(file.path, CSV_OPEN_MODE, **CSV_OPTIONS) do |csv|
+          csv.each do |r|
+            target_attributes = Hash[CSV_ROW.zip(r)]
+              .merge(params)
+              .slice(*IMPORT_COLUMNS)
+            targets << Target.new(target_attributes)
 
-          if targets.length >= batch_size
-            ids.concat Target.import(targets, :validate => true,
-              :raise_error => true)[:ids]
-            targets.clear
+            if targets.length >= batch_size
+              ids.concat Target.import(targets, :validate => true,
+                :raise_error => true)[:ids]
+              targets.clear
+            end
           end
         end
 
