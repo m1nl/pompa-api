@@ -97,7 +97,7 @@ GEM
       faraday_middleware (~> 1.0.0.rc1)
       net-http-persistent (~> 4.0)
       nokogiri (~> 1.11.0.rc2)
-    bootsnap (1.9.1)
+    bootsnap (1.9.3)
       msgpack (~> 1.0)
     builder (3.2.4)
     byebug (11.1.3)
