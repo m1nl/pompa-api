@@ -38,7 +38,7 @@ class Target < ApplicationRecord
         params = params.symbolize_keys
         targets = []
 
-        CSV.foreach(file.path, CSV_OPTIONS) do |r|
+        CSV.foreach(file.path, **CSV_OPTIONS) do |r|
           target_attributes = Hash[CSV_ROW.zip(r)]
             .merge(params)
             .slice(*IMPORT_COLUMNS)
