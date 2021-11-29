@@ -29,7 +29,10 @@ class Scenario < ApplicationRecord
 
   after_save_commit :clear_cached_values, if: Proc.new { |s|
     s.saved_change_to_template_id? || s.saved_change_to_campaign_id? }
+
   after_save_commit :synchronize_group, if: :saved_change_to_group_id?
+
+  after_commit :pause_campaign
 
   build_model_append :campaign, :group, :template
 
@@ -87,33 +90,6 @@ class Scenario < ApplicationRecord
     campaign.ping if !campaign.nil?
 
     return ids
-  end
-
-  def clear_cached_values
-    Victim
-      .where({ scenario_id: id })
-      .in_batches do |victims|
-        victims
-          .pluck(:code)
-          .each { |c| Victim.clear_cached_values(c) }
-      end
-  end
-
-  def resync_campaign
-    ids = [campaign_id]
-    ids << campaign_id_before_last_save if saved_change_to_campaign_id?
-
-    ids.each do |c|
-      campaign = Campaign.find_by_id(c)
-      next if campaign.nil?
-
-      campaign.with_worker_lock do
-        sync = campaign.worker_active?
-
-        campaign.resync(:sync => sync)
-        campaign.pause(:sync => sync) if campaign.state == Campaign::STARTED
-      end
-    end
   end
 
   def victims_summary_csv
@@ -188,6 +164,48 @@ class Scenario < ApplicationRecord
           }
         )
       end
+    end
+
+    def pause_campaign
+      ids = [campaign_id]
+      ids << campaign_id_before_last_save if saved_change_to_campaign_id?
+
+      ids.each do |c|
+        campaign = Campaign.find_by_id(c)
+        next if campaign.nil?
+
+        campaign.with_worker_lock do
+          sync = campaign.worker_active?
+
+          campaign.pause(:sync => sync) if campaign.state == Campaign::STARTED
+        end
+      end
+    end
+
+    def resync_campaign
+      ids = [campaign_id]
+      ids << campaign_id_before_last_save if saved_change_to_campaign_id?
+
+      ids.each do |c|
+        campaign = Campaign.find_by_id(c)
+        next if campaign.nil?
+
+        campaign.with_worker_lock do
+          sync = campaign.worker_active?
+
+          campaign.resync(:sync => sync)
+        end
+      end
+    end
+
+    def clear_cached_values
+      Victim
+        .where({ scenario_id: id })
+        .in_batches do |victims|
+          victims
+            .pluck(:code)
+            .each { |c| Victim.clear_cached_values(c) }
+        end
     end
 
     def batch_size
