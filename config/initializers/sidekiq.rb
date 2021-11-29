@@ -1,7 +1,9 @@
 require 'pompa/redis_connection'
 
 Sidekiq.configure_client do |config|
-  config.redis = Pompa::RedisConnection.pool
+  config.redis = Pompa::RedisConnection.pool(
+    :db => Pompa::RedisConnection::SIDEKIQ_DB
+  )
 end
 
 Sidekiq.configure_server do |config|
