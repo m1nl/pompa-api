@@ -73,7 +73,7 @@ module Pompa
     end
 
     # Configure log level
-    config.log_level = Rails.configuration.pompa.log_level.to_sym
+    Rails.logger.level = Rails.configuration.pompa.log_level.to_sym
 
     # Enable verbose query logs (only in debug log level)
     config.active_record.verbose_query_logs = true
