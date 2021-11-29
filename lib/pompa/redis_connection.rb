@@ -34,6 +34,8 @@ module Pompa
       def redis(opts = {})
         raise ArgumentError, 'Method requires a block' unless block_given?
 
+        return pool(opts).with { |r| yield(r) } if !opts[:db].nil?
+
         if !opts[:redis].nil?
           yield(opts[:redis])
         elsif !opts[:pool].nil?
