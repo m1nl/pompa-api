@@ -26,4 +26,6 @@ Sidekiq.configure_server do |config|
     :db => Pompa::RedisConnection::SIDEKIQ_DB,
     :pool_size => pool_size,
   )
+
+  Sidekiq.logger.level = Rails.configuration.pompa.log_level.to_sym
 end
