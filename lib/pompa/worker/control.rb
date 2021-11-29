@@ -14,13 +14,11 @@ module Pompa
 
         opts[:pool] ||= redis if defined?(redis)
 
-        with_worker_lock(opts.merge(:instance_id => instance_id)) do
-          Pompa::RedisConnection.redis(opts) do |r|
-            r.pipelined do |p|
-              Array(instance_id).each do |i|
-                queue_name = resync_key_name(i, name)
-                p.setex(queue_name, timeout, 1)
-              end
+        with_worker_lock(opts.merge(:instance_id => instance_id)) do |r|
+          r.pipelined do |p|
+            Array(instance_id).each do |i|
+              queue_name = resync_key_name(i, name)
+              p.setex(queue_name, timeout, 1)
             end
           end
 
@@ -37,13 +35,11 @@ module Pompa
 
         opts[:pool] ||= redis if defined?(redis)
 
-        with_worker_lock(opts.merge(:instance_id => instance_id)) do
-          Pompa::RedisConnection.redis(opts) do |r|
-            r.pipelined do |p|
-              Array(instance_id).each do |i|
-                queue_name = cancel_key_name(i, name)
-                p.setex(queue_name, timeout, discard ? CANCEL_DISCARD : CANCEL_NORMAL)
-              end
+        with_worker_lock(opts.merge(:instance_id => instance_id)) do |r|
+          r.pipelined do |p|
+            Array(instance_id).each do |i|
+              queue_name = cancel_key_name(i, name)
+              p.setex(queue_name, timeout, discard ? CANCEL_DISCARD : CANCEL_NORMAL)
             end
           end
 
@@ -59,19 +55,17 @@ module Pompa
 
         opts[:pool] ||= redis if defined?(redis)
 
-        with_worker_lock(opts.merge(:instance_id => instance_id)) do
-          Pompa::RedisConnection.redis(opts) do |r|
-            r.pipelined do |p|
-              Array(instance_id).each do |i|
-                p.multi do |m|
-                  m.del(resync_key_name(i, name))
-                  m.del(cancel_key_name(i, name))
-                  m.del(message_queue_key_name(i, name))
-                  m.del(message_process_queue_key_name(i, name))
-                  m.del(subscribe_key_name(i, name))
-                  m.del(last_active_key_name(i, name))
-                  m.del(worker_state_key_name(i, name))
-                end
+        with_worker_lock(opts.merge(:instance_id => instance_id)) do |r|
+          r.pipelined do |p|
+            Array(instance_id).each do |i|
+              p.multi do |m|
+                m.del(resync_key_name(i, name))
+                m.del(cancel_key_name(i, name))
+                m.del(message_queue_key_name(i, name))
+                m.del(message_process_queue_key_name(i, name))
+                m.del(subscribe_key_name(i, name))
+                m.del(last_active_key_name(i, name))
+                m.del(worker_state_key_name(i, name))
               end
             end
 
@@ -93,16 +87,14 @@ module Pompa
 
         opts[:pool] ||= redis if defined?(redis)
 
-        with_worker_lock(opts.merge(:instance_id => instance_id)) do
-          Pompa::RedisConnection.redis(opts) do |r|
-            queue_name = reply_queue_key_name if queue_name.blank?
+        with_worker_lock(opts.merge(:instance_id => instance_id)) do |r|
+          queue_name = reply_queue_key_name if queue_name.blank?
 
-            r.pipelined do |p|
-              Array(instance_id).each { |i|
-                r.sadd(subscribe_key_name(i, name),
-                  queue_name)
-              }
-            end
+          r.pipelined do |p|
+            Array(instance_id).each { |i|
+              r.sadd(subscribe_key_name(i, name),
+                queue_name)
+            }
           end
         end
       end
@@ -114,13 +106,11 @@ module Pompa
         opts[:pool] ||= redis if defined?(redis)
 
         with_worker_lock(opts.merge(:instance_id => instance_id)) do
-          Pompa::RedisConnection.redis(opts) do |r|
-            r.pipelined do |p|
-              Array(instance_id).each { |i|
-                r.srem(subscribe_key_name(i, name),
-                  queue_name)
-              }
-            end
+          r.pipelined do |p|
+            Array(instance_id).each { |i|
+              r.srem(subscribe_key_name(i, name),
+                queue_name)
+            }
           end
         end
       end
@@ -167,7 +157,9 @@ module Pompa
         opts[:pool] ||= redis if defined?(redis)
 
         Pompa::RedisConnection.locked(worker_lock_key_name(instance_id, name),
-          queue_timeout, opts) { |r| yield(r) }
+          queue_timeout, opts) do
+          Pompa::RedisConnection.redis(opts) { |r| yield(r) }
+        end
       end
 
       def worker_lock(opts = {})
@@ -245,6 +237,8 @@ module Pompa
 
           queue_key_name = message_queue_key_name(instance_id, name)
 
+          opts[:pool] ||= redis if defined?(redis)
+
           Pompa::RedisConnection.redis(opts) do |r|
             message[:reply_to] = reply_queue_key_name if message[:reply_to]
               .blank?
@@ -302,6 +296,8 @@ module Pompa
           message[:expires] ||= timeout.seconds.from_now
 
           queue_key_name = message_queue_key_name(instance_id, name)
+
+          opts[:pool] ||= redis if defined?(redis)
 
           Pompa::RedisConnection.redis(opts) do |r|
             message[:reply_to] = reply_queue_key_name if message[:reply_to]

@@ -57,7 +57,7 @@ module Pompa
           lock(resource_key, timeout, opts.merge(:redis => r))
 
           begin
-            return yield(r)
+            return yield
           ensure
             unlock(resource_key, opts.merge(:redis => r)) if !already_locked
           end
