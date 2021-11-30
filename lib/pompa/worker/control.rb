@@ -105,7 +105,7 @@ module Pompa
 
         opts[:pool] ||= redis if defined?(redis)
 
-        with_worker_lock(opts.merge(:instance_id => instance_id)) do
+        with_worker_lock(opts.merge(:instance_id => instance_id)) do |r|
           r.pipelined do |p|
             Array(instance_id).each { |i|
               r.srem(subscribe_key_name(i, name),
@@ -126,7 +126,7 @@ module Pompa
         Array(instance_id).each do |i|
           result = []
 
-          with_worker_lock(opts.merge(:instance_id => i)) do
+          with_worker_lock(opts.merge(:instance_id => i)) do |r|
             if sync
               result << message_sync(message, opts.merge(:instance_id => i))
             else
