@@ -141,7 +141,7 @@ GEM
       rake
     globalid (1.0.0)
       activesupport (>= 5.0)
-    groupdate (5.2.3)
+    groupdate (5.2.4)
       activesupport (>= 5)
     hashie (5.0.0)
     hiredis (0.6.3)
