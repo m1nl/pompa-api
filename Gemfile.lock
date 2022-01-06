@@ -200,7 +200,7 @@ GEM
       racc (~> 1.4)
     nokogiri (1.12.5-java)
       racc (~> 1.4)
-    oj (3.13.10)
+    oj (3.13.11)
     parallel (1.21.0)
     parser (3.1.0.0)
       ast (~> 2.4.1)
