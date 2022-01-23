@@ -166,6 +166,7 @@ class VictimWorkerJob < WorkerJob
           model.state = Victim::ERROR
           model.last_error = "#{e.class}: #{e.message}"
           model.error_count += 1
+          model.save!
           logger.error("Error preparing email: #{model.last_error}")
           multi_logger.backtrace(e)
           return result(ERROR, model.last_error, :broadcast => true)
