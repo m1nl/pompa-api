@@ -15,8 +15,9 @@ Sidekiq.configure_server do |config|
   pool_size = Sidekiq.options[:concurrency] + 5
 
   ActiveSupport.on_load(:active_record) do
-    active_record_config = (ActiveRecord::Base.configurations[Rails.env] ||
-      Rails.application.config.database_configuration[Rails.env]).deep_dup
+    active_record_config = ActiveRecord::Base.configurations
+      .find_db_config(Rails.env).configuration_hash.deep_dup
+
     active_record_config['pool'] = pool_size
 
     ActiveRecord::Base.establish_connection(active_record_config.freeze)
