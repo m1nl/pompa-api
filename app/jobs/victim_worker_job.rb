@@ -160,6 +160,8 @@ class VictimWorkerJob < WorkerJob
               }, { :pool => redis })
           logger.info('Email queued')
           model.state = Victim::QUEUED
+          model.save!
+          return result(Victim::STATE_CHANGE, model.state, :broadcast => true)
         rescue StandardError => e
           model.state = Victim::ERROR
           model.last_error = "#{e.class}: #{e.message}"
@@ -167,12 +169,8 @@ class VictimWorkerJob < WorkerJob
           logger.error("Error preparing email: #{model.last_error}")
           multi_logger.backtrace(e)
           return result(ERROR, model.last_error, :broadcast => true)
-        ensure
-          model.save!
         end
       end
-
-      return result(Victim::STATE_CHANGE, model.state, :broadcast => true)
     end
 
     ###
