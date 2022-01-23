@@ -76,8 +76,6 @@ GEM
     addressable (2.8.0)
       public_suffix (>= 2.0.2, < 5.0)
     ast (2.4.2)
-    attr_encrypted (3.1.0)
-      encryptor (~> 3.0.0)
     awesome_print (1.9.2)
     aws-eventstream (1.2.0)
     aws-partitions (1.549.0)
@@ -103,10 +101,9 @@ GEM
       faraday_middleware (~> 1.0, >= 1.0.0.rc1)
       net-http-persistent (~> 4.0)
       nokogiri (~> 1, >= 1.10.8)
-    bootsnap (1.10.1)
+    bootsnap (1.10.2)
       msgpack (~> 1.2)
     builder (3.2.4)
-    byebug (11.1.3)
     case_transform (0.2)
       activesupport
     colorize (0.8.1)
@@ -119,7 +116,6 @@ GEM
     digest (3.1.0-java)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
-    encryptor (3.0.0)
     erubi (1.10.0)
     faraday (1.9.3)
       faraday-em_http (~> 1.0)
@@ -201,8 +197,8 @@ GEM
     mini_mime (1.1.2)
     mini_portile2 (2.7.1)
     minitest (5.15.0)
-    msgpack (1.4.2)
-    msgpack (1.4.2-java)
+    msgpack (1.4.4)
+    msgpack (1.4.4-java)
     multipart-post (2.1.1)
     net-http-persistent (4.0.1)
       connection_pool (~> 2.2)
@@ -283,9 +279,9 @@ GEM
     redis (4.5.1)
     regexp_parser (2.2.0)
     rexml (3.2.5)
-    rubocop (1.24.1)
+    rubocop (1.25.0)
       parallel (~> 1.10)
-      parser (>= 3.0.0.0)
+      parser (>= 3.1.0.0)
       rainbow (>= 2.2.2, < 4.0)
       regexp_parser (>= 1.8, < 3.0)
       rexml
@@ -304,10 +300,6 @@ GEM
       connection_pool (>= 2.2.2)
       rack (~> 2.0)
       redis (>= 4.2.0)
-    spring (2.1.1)
-    spring-watcher-listen (2.0.1)
-      listen (>= 2.7, < 4.0)
-      spring (>= 1.2, < 3.0)
     strscan (3.0.1)
     thor (1.2.1)
     thread_safe (0.3.6)
@@ -339,12 +331,10 @@ PLATFORMS
 DEPENDENCIES
   active_model_serializers
   activerecord-import
-  attr_encrypted
   awesome_print
   aws-sdk-s3
   azure-storage-blob
   bootsnap
-  byebug
   colorize
   concurrent-ruby
   concurrent-ruby-ext
@@ -355,7 +345,7 @@ DEPENDENCIES
   jwt
   kaminari
   liquid
-  listen (>= 3.0.5, < 3.8)
+  listen
   mail
   oj
   pg
@@ -369,8 +359,6 @@ DEPENDENCIES
   ruby-saml
   rubyzip
   sidekiq
-  spring
-  spring-watcher-listen (~> 2.0.0)
   thread_safe
   tzinfo-data
   validate_url

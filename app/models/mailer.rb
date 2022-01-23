@@ -14,16 +14,10 @@ class Mailer < ApplicationRecord
   validates :per_minute, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
   validates :burst, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
 
-  validate :password_check
-
   nullify_blanks :username, :password, :sender_email, :sender_name
 
-  if !Rails.application.secrets.database_key.blank?
-    attr_encrypted :password,
-      key: [Rails.application.secrets.database_key].pack('H*'),
-      algorithm: 'aes-256-gcm', mode: :per_attribute_iv
-  else
-    attribute :password
+  if !Rails.application.credentials.active_record_encryption.blank?
+    encrypts :password
   end
 
   worker_auto start: true, spawn: true
@@ -40,12 +34,4 @@ class Mailer < ApplicationRecord
       @extra_headers
     end
   end
-
-  private
-    def password_check
-      return if !Rails.application.secrets.database_key.blank?
-
-      errors.add(:password,
-        'unable to store password - database secret is blank') if !password.blank?
-    end
 end

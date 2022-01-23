@@ -25,6 +25,9 @@
 # ignore Sidekiq configuration
 /config/sidekiq.yml
 
+# ignore credentials configuration
+/config/credentials.yml
+
 # ignore all logfiles and tempfiles but keep directory structure
 /log/*
 !/log/.keep
@@ -56,3 +59,5 @@
 # ignore rvm config
 /.ruby-gemset
 /.ruby-version
+
+/config/credentials/development.key

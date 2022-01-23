@@ -1,21 +1,19 @@
-# frozen_string_literal: true
-
 source 'https://rubygems.org'
+git_source(:github) { |repo| 'https://github.com/#{repo}.git' }
 
 gem 'rails', '~> 7.0.1'
+gem 'bootsnap', require: false
 
 gem 'pg'
 gem 'redis'
 
 gem 'concurrent-ruby-ext'
 gem 'hiredis'
-gem 'bootsnap'
-
 gem 'rack-cors'
+
 gem 'puma'
 gem 'active_model_serializers'
 gem 'kaminari'
-gem 'attr_encrypted'
 gem 'validate_url'
 gem 'sidekiq'
 gem 'liquid'
@@ -42,8 +40,7 @@ gem 'azure-storage-blob'
 gem 'paperclip' if ENV['ENABLE_PAPERCLIP']
 
 group :development, :test do
-  # Call 'byebug' anywhere in the code to stop execution and get a debugger console
-  gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
+  gem 'listen'
   # Use rubocop for static code analysis
   gem 'rubocop'
   # Use bullet to optimize N+1 queries
@@ -51,11 +48,9 @@ group :development, :test do
 end
 
 group :development do
-  gem 'listen', '>= 3.0.5', '< 3.8'
-  # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
-  gem 'spring'
-  gem 'spring-watcher-listen', '~> 2.0.0'
+  # Speed up commands on slow machines / big apps [https://github.com/rails/spring]
+  #gem 'spring'
 end
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
+gem 'tzinfo-data', platforms: %i[ mingw mswin x64_mingw jruby ]

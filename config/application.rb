@@ -81,5 +81,13 @@ module Pompa
     # Specifies the header that your server uses for sending files
     config.action_dispatch.x_sendfile_header = Rails.configuration.pompa
       .sendfile_header if !Rails.configuration.pompa.sendfile_header.blank?
+
+    # Support unencrypted data for Active Record encrypted attributes
+    config.active_record.encryption.support_unencrypted_data = true
+
+    # Don't use encrypted credentials as they're bothersome for k8s / docker
+    def credentials
+      @credentials ||= Pompa::Configuration.new(Rails.root.join('config', 'credentials.yml'))
+    end
   end
 end
