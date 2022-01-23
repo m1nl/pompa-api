@@ -113,7 +113,6 @@ GEM
     connection_pool (2.2.5)
     crass (1.0.6)
     digest (3.1.0)
-    digest (3.1.0-java)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
     erubi (1.10.0)
@@ -143,7 +142,6 @@ GEM
     faraday_middleware (1.2.0)
       faraday (~> 1.0)
     ffi (1.15.5)
-    ffi (1.15.5-java)
     ffi-compiler (1.0.1)
       ffi (>= 1.0.0)
       rake
@@ -153,7 +151,6 @@ GEM
       activesupport (>= 5.2)
     hashie (5.0.0)
     hiredis (0.6.3)
-    hiredis (0.6.3-java)
     http (5.0.4)
       addressable (~> 2.8)
       http-cookie (~> 1.0)
@@ -198,7 +195,6 @@ GEM
     mini_portile2 (2.7.1)
     minitest (5.15.0)
     msgpack (1.4.4)
-    msgpack (1.4.4-java)
     multipart-post (2.1.1)
     net-http-persistent (4.0.1)
       connection_pool (~> 2.2)
@@ -218,11 +214,8 @@ GEM
       net-protocol
       timeout
     nio4r (2.5.8)
-    nio4r (2.5.8-java)
     nokogiri (1.13.1)
       mini_portile2 (~> 2.7.0)
-      racc (~> 1.4)
-    nokogiri (1.13.1-java)
       racc (~> 1.4)
     oj (3.13.11)
     parallel (1.21.0)
@@ -232,12 +225,9 @@ GEM
     public_suffix (4.0.6)
     puma (5.5.2)
       nio4r (~> 2.0)
-    puma (5.5.2-java)
-      nio4r (~> 2.0)
     pundit (2.1.1)
       activesupport (>= 3.0.0)
     racc (1.6.0)
-    racc (1.6.0-java)
     rack (2.2.3)
     rack-cors (1.1.1)
       rack (>= 2.0.0)
@@ -303,15 +293,11 @@ GEM
     strscan (3.0.1)
     thor (1.2.1)
     thread_safe (0.3.6)
-    thread_safe (0.3.6-java)
     timeout (0.2.0)
     tzinfo (2.0.4)
       concurrent-ruby (~> 1.0)
-    tzinfo-data (1.2021.5)
-      tzinfo (>= 1.0.0)
     unf (0.1.4)
       unf_ext
-    unf (0.1.4-java)
     unf_ext (0.0.8)
     unicode-display_width (2.1.0)
     validate_url (1.0.13)
@@ -319,14 +305,11 @@ GEM
       public_suffix
     websocket-driver (0.7.5)
       websocket-extensions (>= 0.1.0)
-    websocket-driver (0.7.5-java)
-      websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.5)
     zeitwerk (2.5.3)
 
 PLATFORMS
-  java
-  ruby
+  x86_64-linux
 
 DEPENDENCIES
   active_model_serializers
@@ -364,4 +347,4 @@ DEPENDENCIES
   validate_url
 
 BUNDLED WITH
-   2.2.3
+   2.3.5
