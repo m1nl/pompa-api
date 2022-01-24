@@ -10,8 +10,6 @@ Sidekiq.configure_server do |config|
   Rails.application.config.cache_classes = true
   Rails.application.config.eager_load = true
 
-  pool_size = Sidekiq.options[:concurrency] + 5
-
   config.redis = Pompa::RedisConnection.pool(
     :db => Pompa::RedisConnection::SIDEKIQ_DB,
     :pool_size => pool_size,
