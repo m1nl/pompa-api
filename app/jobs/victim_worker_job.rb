@@ -54,6 +54,8 @@ class VictimWorkerJob < WorkerJob
       return result(INVALID,
         'Unable to process result') if origin_name != MailerWorkerJob.name
 
+      transaction_result = nil
+
       model.with_lock do
         return result(INVALID,
           'Unable to process result') if model.state != Victim::QUEUED
@@ -62,7 +64,7 @@ class VictimWorkerJob < WorkerJob
           when Mailer::QUEUED
             model.message_id = value
             model.save!
-            return result(SUCCESS)
+            transaction_result = result(SUCCESS)
           when Mailer::SENT
             return result(INVALID,
               'Invalid Message-ID') if !model.message_id.blank? &&
@@ -73,7 +75,7 @@ class VictimWorkerJob < WorkerJob
             model.sent_date = Time.current
             model.last_error = nil
             model.save!
-            return result(Victim::STATE_CHANGE, model.state, :broadcast => true)
+            transaction_result = result(Victim::STATE_CHANGE, model.state, :broadcast => true)
           when ERROR
             if retry_count >= retry_threshold
               model.state = Victim::ERROR
@@ -82,22 +84,24 @@ class VictimWorkerJob < WorkerJob
               model.save!
 
               logger.info('Maximum number of retries exceeded')
-              return result(ERROR, model.last_error, :broadcast => true)
+              transaction_result = result(ERROR, model.last_error, :broadcast => true)
             else
               increase_retry_count
               logger.info("Retrying - #{retry_count}/#{retry_threshold}")
-              return process_email
+              transaction_result = process_email
             end
           when INVALID
             model.state = Victim::ERROR
             model.last_error = value
             model.error_count += 1
             model.save!
-            return result(ERROR, model.last_error, :broadcast => true)
+            transaction_result = result(ERROR, model.last_error, :broadcast => true)
           else
-            return result(SUCCESS) # ignore
+            transaction_result = result(SUCCESS) # ignore
         end
       end
+
+      transaction_result
     end
 
     def process_action(message)
@@ -115,6 +119,8 @@ class VictimWorkerJob < WorkerJob
     end
 
     def send_email(message)
+      transaction_result = nil
+
       model.with_lock do
         return result(INVALID, 'Campaign has finished') if model.scenario
           .campaign.state == Campaign::FINISHED
@@ -122,8 +128,10 @@ class VictimWorkerJob < WorkerJob
           Victim::ERROR].include?(model.state) && !message[:force]
 
         reset_retry_count
-        return process_email
+        transaction_result = process_email
       end
+
+      transaction_result
     end
 
     def reset_state(message)
@@ -145,33 +153,33 @@ class VictimWorkerJob < WorkerJob
 
     def process_email
       model.with_lock do
-        begin
-          logger.debug('Preparing email')
-          @mail = model.mail
-          multi_logger.debug{['Queueing email: ', @mail]}
-          model
-            .scenario
-            .mailer
-            .message(
-              {
-                :mail => @mail,
-                :reply_to => message_queue_key_name,
-                :expires => email_timeout.from_now,
-              }, { :pool => redis })
-          logger.info('Email queued')
-          model.state = Victim::QUEUED
-          model.save!
-          return result(Victim::STATE_CHANGE, model.state, :broadcast => true)
-        rescue StandardError => e
-          model.state = Victim::ERROR
-          model.last_error = "#{e.class}: #{e.message}"
-          model.error_count += 1
-          model.save!
-          logger.error("Error preparing email: #{model.last_error}")
-          multi_logger.backtrace(e)
-          return result(ERROR, model.last_error, :broadcast => true)
-        end
+        logger.debug('Preparing email')
+        @mail = model.mail
+        multi_logger.debug{['Queueing email: ', @mail]}
+        model
+          .scenario
+          .mailer
+          .message(
+            {
+              :mail => @mail,
+              :reply_to => message_queue_key_name,
+              :expires => email_timeout.from_now,
+            }, { :pool => redis })
+        logger.info('Email queued')
+        model.state = Victim::QUEUED
+        model.save!
       end
+
+      return result(Victim::STATE_CHANGE, model.state, :broadcast => true)
+
+    rescue StandardError => e
+      model.state = Victim::ERROR
+      model.last_error = "#{e.class}: #{e.message}"
+      model.error_count += 1
+      model.save!
+      logger.error("Error preparing email: #{model.last_error}")
+      multi_logger.backtrace(e)
+      return result(ERROR, model.last_error, :broadcast => true)
     end
 
     ###

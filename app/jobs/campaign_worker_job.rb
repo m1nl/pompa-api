@@ -153,7 +153,7 @@ class CampaignWorkerJob < WorkerJob
       end
 
       return result(Campaign::STATE_CHANGE, Campaign::STARTED)
-     end
+    end
 
     def pause
       model.with_lock do
