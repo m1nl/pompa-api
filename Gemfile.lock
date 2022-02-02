@@ -279,7 +279,7 @@ GEM
     rubocop-ast (1.15.1)
       parser (>= 3.0.1.1)
     ruby-progressbar (1.11.0)
-    ruby-saml (1.13.0)
+    ruby-saml (1.14.0)
       nokogiri (>= 1.10.5)
       rexml
     ruby2_keywords (0.0.5)
