@@ -56,25 +56,23 @@ module Pompa
         opts[:pool] ||= redis if defined?(redis)
 
         with_worker_lock(opts.merge(:instance_id => instance_id)) do |r|
-          r.pipelined do |p|
-            Array(instance_id).each do |i|
-              p.multi do |m|
-                m.del(resync_key_name(i, name))
-                m.del(cancel_key_name(i, name))
-                m.del(message_queue_key_name(i, name))
-                m.del(message_process_queue_key_name(i, name))
-                m.del(subscribe_key_name(i, name))
-                m.del(last_active_key_name(i, name))
-                m.del(worker_state_key_name(i, name))
-              end
+          Array(instance_id).each do |i|
+            r.multi do |m|
+              m.del(resync_key_name(i, name))
+              m.del(cancel_key_name(i, name))
+              m.del(message_queue_key_name(i, name))
+              m.del(message_process_queue_key_name(i, name))
+              m.del(subscribe_key_name(i, name))
+              m.del(last_active_key_name(i, name))
+              m.del(worker_state_key_name(i, name))
             end
-
-            Array(instance_id).each { |i|
-              worker_class.cleanup(opts.merge(:name => name, :instance_id => i,
-                :timeout => timeout, :redis => r)) if worker_class
-                .respond_to?(:cleanup)
-            }
           end
+
+          Array(instance_id).each { |i|
+            worker_class.cleanup(opts.merge(:name => name, :instance_id => i,
+              :timeout => timeout, :redis => r)) if worker_class
+              .respond_to?(:cleanup)
+          }
         end
 
         return true
@@ -92,7 +90,7 @@ module Pompa
 
           r.pipelined do |p|
             Array(instance_id).each { |i|
-              r.sadd(subscribe_key_name(i, name),
+              p.sadd(subscribe_key_name(i, name),
                 queue_name)
             }
           end
@@ -108,7 +106,7 @@ module Pompa
         with_worker_lock(opts.merge(:instance_id => instance_id)) do |r|
           r.pipelined do |p|
             Array(instance_id).each { |i|
-              r.srem(subscribe_key_name(i, name),
+              p.srem(subscribe_key_name(i, name),
                 queue_name)
             }
           end
