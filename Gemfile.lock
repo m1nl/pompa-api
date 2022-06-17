@@ -151,7 +151,7 @@ GEM
       activesupport (>= 5.2)
     hashie (5.0.0)
     hiredis (0.6.3)
-    http (5.0.4)
+    http (5.1.0)
       addressable (~> 2.8)
       http-cookie (~> 1.0)
       http-form_data (~> 2.2)
