@@ -265,7 +265,7 @@ GEM
     redis (4.6.0)
     regexp_parser (2.5.0)
     rexml (3.2.5)
-    rubocop (1.30.0)
+    rubocop (1.31.0)
       parallel (~> 1.10)
       parser (>= 3.1.0.0)
       rainbow (>= 2.2.2, < 4.0)
@@ -295,7 +295,7 @@ GEM
     unf (0.1.4)
       unf_ext
     unf_ext (0.0.8.2)
-    unicode-display_width (2.1.0)
+    unicode-display_width (2.2.0)
     validate_url (1.0.15)
       activemodel (>= 3.0.0)
       public_suffix
