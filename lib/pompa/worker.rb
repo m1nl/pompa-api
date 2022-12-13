@@ -123,6 +123,9 @@ module Pompa
         "#{e.class}: #{e.message}. Exiting...")
       multi_logger.backtrace(e)
 
+    rescue Sidekiq::Shutdown => e
+      logger.info("Got Sidekiq shutdown exception. Exiting...")
+
     ensure
       begin
         try_release

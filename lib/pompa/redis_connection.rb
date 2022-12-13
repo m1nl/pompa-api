@@ -1,6 +1,7 @@
 require 'redis'
 require 'redlock'
 require 'connection_pool'
+require 'uri'
 
 module Pompa
   class RedisConnection
@@ -139,7 +140,18 @@ module Pompa
         config.merge!(config.extract!(*SYMBOLIZE_VALUES_FOR)
           .transform_values!(&:to_sym))
 
-        @config[db] = config
+        url = config.delete(:url)
+        uri = URI(url)
+
+        if uri.scheme == "unix"
+          config[:path] = uri.path
+        else
+          config[:url] = uri.to_s
+        end
+
+        config.delete(:pool_size)
+
+        @config[db] = config.freeze
       end
 
       def pool_size=(value)

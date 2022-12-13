@@ -2,7 +2,7 @@ class ApplicationController < ActionController::API
   include ErrorHandlers
 
   include Authenticatable
-  include Pundit
+  include Pundit::Authorization
 
   if Rails.configuration.pompa.authentication.enabled
     before_action :authenticate

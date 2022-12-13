@@ -1,7 +1,9 @@
 redis_default: &redis_default
-  driver: hiredis
   pool_size: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   url: "<%= ENV.fetch('POMPA_REDIS_URL') { 'unix:///var/run/redis/redis-server.sock' } %>"
+  driver:
+    _default: hiredis
+    sidekiq: hiredis
   read_timeout:
     _default: 5
     cache: 0.5

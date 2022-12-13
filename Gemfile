@@ -5,10 +5,11 @@ gem 'rails', '~> 7.0.3'
 gem 'bootsnap', require: false
 
 gem 'pg'
+
 gem 'redis'
+gem 'hiredis-client'
 
 gem 'concurrent-ruby-ext'
-gem 'hiredis'
 gem 'rack-cors'
 
 gem 'puma'
