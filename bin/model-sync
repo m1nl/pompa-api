@@ -1,9 +1,8 @@
 #!/usr/bin/env ruby
-
-# frozen_string_literal: true
+APP_PATH = File.expand_path("../config/application", __dir__)
+require_relative "../config/boot"
 
 require 'pathname'
-
 $LOAD_PATH.unshift Pathname.new('../lib').expand_path(File.dirname(__FILE__)).to_s
 
 require 'model_sync/cli'
